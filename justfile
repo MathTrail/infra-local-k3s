@@ -9,6 +9,65 @@ REGISTRY_PORT := "5050"
 K3D_PORT_HTTP := "80:80@loadbalancer"
 K3D_PORT_HTTPS := "443:443@loadbalancer"
 
+# Full setup: install tools + create cluster
+setup: install-lens install create
+
+# Install OpenLens IDE for Kubernetes
+install-lens:
+    #!/bin/bash
+    set -e
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+        LENS_EXE="$LOCALAPPDATA/Programs/OpenLens/OpenLens.exe"
+        if [ -f "$LENS_EXE" ]; then
+            echo "✅ OpenLens is already installed"
+        else
+            echo "📥 Installing OpenLens via winget..."
+            winget install --id MuhammedKalkan.OpenLens --accept-source-agreements --accept-package-agreements || true
+            echo "✅ OpenLens installed"
+        fi
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        if command -v OpenLens &>/dev/null || command -v open-lens &>/dev/null; then
+            echo "✅ OpenLens is already installed"
+        else
+            echo "📥 Installing OpenLens..."
+            ARCH=$(dpkg --print-architecture 2>/dev/null || echo "amd64")
+            DEB_URL=$(curl -s https://api.github.com/repos/MuhammedKalkan/OpenLens/releases/latest \
+                | grep "browser_download_url.*${ARCH}\.deb" | head -1 | cut -d '"' -f 4)
+            if [ -z "$DEB_URL" ]; then
+                echo "❌ Could not find OpenLens .deb package for $ARCH"
+                echo "   Download manually from: https://github.com/MuhammedKalkan/OpenLens/releases"
+                exit 1
+            fi
+            curl -fSL "$DEB_URL" -o /tmp/openlens.deb
+            sudo dpkg -i /tmp/openlens.deb || sudo apt-get install -f -y
+            rm -f /tmp/openlens.deb
+            echo "✅ OpenLens installed"
+        fi
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        if brew list --cask openlens &>/dev/null; then
+            echo "✅ OpenLens is already installed"
+        else
+            echo "📥 Installing OpenLens via Homebrew..."
+            brew install --cask openlens
+            echo "✅ OpenLens installed"
+        fi
+    else
+        echo "❌ Unsupported OS: $OSTYPE"
+        echo "   Download manually from: https://github.com/MuhammedKalkan/OpenLens/releases"
+        exit 1
+    fi
+
+# Open OpenLens
+lens:
+    #!/bin/bash
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+        start "" "$LOCALAPPDATA/Programs/OpenLens/OpenLens.exe"
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        open -a OpenLens
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        open-lens &>/dev/null &
+    fi
+
 # Install k3d on the system
 install:
     #!/bin/bash
@@ -167,23 +226,17 @@ kubeconfig:
     CLUSTER_NAME="{{ CLUSTER_NAME }}"
     KUBECONFIG_DIR="${HOME}/.kube"
     KUBECONFIG_DEST="${KUBECONFIG_DIR}/k3d-${CLUSTER_NAME}.yaml"
-    
+
     mkdir -p "${KUBECONFIG_DIR}"
-    
-    if [ "$(uname)" == "Darwin" ]; then
-        # macOS
-        k3d kubeconfig get "$CLUSTER_NAME" > "${KUBECONFIG_DEST}"
-    elif [ "$(uname)" == "Linux" ]; then
-        # Linux
-        k3d kubeconfig get "$CLUSTER_NAME" > "${KUBECONFIG_DEST}"
-    elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
-        # Windows (Git Bash or Cygwin)
-        k3d kubeconfig get "$CLUSTER_NAME" > "${KUBECONFIG_DEST}"
-    fi
-    
+
+    # Save standalone kubeconfig (used by devcontainers)
+    k3d kubeconfig get "$CLUSTER_NAME" > "${KUBECONFIG_DEST}"
     chmod 600 "${KUBECONFIG_DEST}" 2>/dev/null || true
     echo "✅ Kubeconfig saved to ${KUBECONFIG_DEST}"
-    echo "🔗 Set as default: export KUBECONFIG=${KUBECONFIG_DEST}"
+
+    # Merge into default ~/.kube/config (used by OpenLens, kubectl, etc.)
+    k3d kubeconfig merge "$CLUSTER_NAME" --kubeconfig-merge-default
+    echo "✅ Merged into ~/.kube/config (OpenLens will detect it automatically)"
 
 # Initialize cluster with essential components (Dapr, etc.)
 init-cluster:

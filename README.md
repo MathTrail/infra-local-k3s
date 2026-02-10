@@ -208,6 +208,28 @@ K3D_PORT_HTTPS := "8443:443@loadbalancer"  # Use 8443 instead of 443
 - **Disk space**: Container images can use several GB. Clean up with `docker system prune`.
 - **CPU**: Typically requires 2+ CPU cores.
 
+## OpenLens
+
+[OpenLens](https://github.com/MuhammedKalkan/OpenLens) is a free Kubernetes IDE that provides a graphical interface for managing and monitoring the cluster.
+
+### Install
+
+OpenLens is installed automatically as part of `just setup`, or separately:
+
+```bash
+just install-lens
+```
+
+This detects your OS and installs via `winget` (Windows), `dpkg` (Linux), or `brew` (macOS).
+
+### Run
+
+```bash
+just lens
+```
+
+The cluster appears automatically — kubeconfig is merged into `~/.kube/config` during `just create`.
+
 ## Additional Resources
 
 - [K3d Documentation](https://k3d.io/latest/)
