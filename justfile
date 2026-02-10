@@ -4,6 +4,8 @@ set shell := ["bash", "-c"]
 
 # Cluster configuration
 CLUSTER_NAME := "mathtrail-dev"
+REGISTRY_NAME := "mathtrail-registry"
+REGISTRY_PORT := "5050"
 K3D_PORT_HTTP := "80:80@loadbalancer"
 K3D_PORT_HTTPS := "443:443@loadbalancer"
 
@@ -54,10 +56,10 @@ create:
     K3D_PORT_HTTP="{{ K3D_PORT_HTTP }}"
     K3D_PORT_HTTPS="{{ K3D_PORT_HTTPS }}"
     
-    echo "Cleaning up conflicting containers..."
-    # Remove any existing registry containers that might conflict
-    docker rm -f mathtrail-registry 2>/dev/null || true
-    
+    REGISTRY_NAME="{{ REGISTRY_NAME }}"
+    REGISTRY_PORT="{{ REGISTRY_PORT }}"
+    REGISTRY_FULL="k3d-${REGISTRY_NAME}:${REGISTRY_PORT}"
+
     # Check if cluster already exists and remove it if it's in a bad state
     if k3d cluster list | grep -q "$CLUSTER_NAME"; then
         echo "Found existing cluster '$CLUSTER_NAME', checking its state..."
@@ -69,17 +71,28 @@ create:
             exit 0
         fi
     fi
-    
+
+    # Create registry (idempotent)
+    if k3d registry list | grep -q "k3d-${REGISTRY_NAME}"; then
+        echo "✅ Registry 'k3d-${REGISTRY_NAME}' already exists"
+    else
+        echo "Creating k3d registry '${REGISTRY_NAME}' on port ${REGISTRY_PORT}..."
+        k3d registry create "$REGISTRY_NAME" --port "$REGISTRY_PORT"
+        echo "✅ Registry created"
+    fi
+
     echo "Creating k3d cluster '$CLUSTER_NAME'..."
-    
+
     k3d cluster create "$CLUSTER_NAME" \
         --servers 1 \
         --agents 2 \
         --port "$K3D_PORT_HTTP" \
         --port "$K3D_PORT_HTTPS" \
+        --registry-use "$REGISTRY_FULL" \
+        --registry-config "{{ justfile_directory() }}/registries.yaml" \
         --wait \
         --timeout 120s
-    
+
     echo "✅ Cluster '$CLUSTER_NAME' created successfully"
     just kubeconfig
 
@@ -90,17 +103,17 @@ delete:
     CLUSTER_NAME="{{ CLUSTER_NAME }}"
     echo "Deleting k3d cluster '$CLUSTER_NAME'..."
     
+    REGISTRY_NAME="{{ REGISTRY_NAME }}"
+
     if ! k3d cluster list | grep -q "$CLUSTER_NAME"; then
         echo "⚠️  Cluster '$CLUSTER_NAME' does not exist"
-        exit 0
+    else
+        k3d cluster delete "$CLUSTER_NAME" --all
+        echo "✅ Cluster deleted"
     fi
-    
-    k3d cluster delete "$CLUSTER_NAME" --all
-    
-    # Wait a moment for cleanup
-    sleep 2
-    
-    echo "✅ Cluster deleted"
+
+    # Delete registry
+    k3d registry delete "k3d-${REGISTRY_NAME}" 2>/dev/null && echo "✅ Registry deleted" || true
 
 # Start the k3d development cluster
 start:
