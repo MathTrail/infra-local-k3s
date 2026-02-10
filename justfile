@@ -2,8 +2,8 @@
 
 set shell := ["bash", "-c"]
 
-# Import OS-specific recipes (install, install-lens, lens)
-# Each file uses [linux]/[windows]/[macos] attributes so only matching OS recipes are active
+# Import OS-specific recipes: _install-node, _install-k3d, install-lens, lens
+# Each recipe uses [linux]/[windows]/[macos] attributes — only matching OS is active
 import "os/linux.just"
 import "os/windows.just"
 import "os/macos.just"
@@ -17,6 +17,15 @@ K3D_PORT_HTTPS := "443:443@loadbalancer"
 
 # Full setup: install tools + create cluster
 setup: install install-lens create
+
+# Install prerequisites (Docker check is shared, rest is OS-specific)
+install: _check-docker _install-node _install-k3d
+    @echo "✅ All prerequisites installed"
+
+_check-docker:
+    #!/bin/bash
+    command -v docker &>/dev/null || { echo "❌ Docker is required. Install Docker Desktop first"; exit 1; }
+    echo "✅ Docker"
 
 # Install OpenLens pod menu extension (shared helper, called from OS-specific install-lens)
 _install-lens-extension:
