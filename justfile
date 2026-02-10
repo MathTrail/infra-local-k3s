@@ -10,7 +10,7 @@ K3D_PORT_HTTP := "80:80@loadbalancer"
 K3D_PORT_HTTPS := "443:443@loadbalancer"
 
 # Full setup: install tools + create cluster
-setup: install-lens install create
+setup: install install-lens create
 
 # Install OpenLens IDE for Kubernetes
 install-lens:
@@ -57,6 +57,22 @@ install-lens:
         exit 1
     fi
 
+    # Install node-pod-menu extension (adds Logs/Shell buttons to pod list)
+    LENS_EXT_DIR="$HOME/.k8slens/extensions"
+    EXT_DIR="$LENS_EXT_DIR/openlens-node-pod-menu"
+    if [ -f "$EXT_DIR/package.json" ]; then
+        echo "✅ Pod menu extension already installed"
+    else
+        echo "📥 Installing OpenLens pod menu extension..."
+        rm -rf "$LENS_EXT_DIR/node_modules" "$LENS_EXT_DIR/package.json" "$LENS_EXT_DIR/package-lock.json"
+        mkdir -p "$EXT_DIR"
+        TMP_DIR=$(mktemp -d)
+        npm install --prefix "$TMP_DIR" @alebcay/openlens-node-pod-menu
+        cp -r "$TMP_DIR/node_modules/@alebcay/openlens-node-pod-menu/"* "$EXT_DIR/"
+        rm -rf "$TMP_DIR"
+        echo "✅ Pod menu extension installed (restart OpenLens to activate)"
+    fi
+
 # Open OpenLens
 lens:
     #!/bin/bash
@@ -83,6 +99,22 @@ install:
     fi
     echo "✅ Docker is installed"
     
+    # Check Node.js (needed for OpenLens extension install)
+    if command -v node &> /dev/null; then
+        echo "✅ Node.js is installed: $(node --version)"
+    else
+        echo "📥 Installing Node.js..."
+        if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+            winget install --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements || true
+        elif [[ "$OSTYPE" == "darwin"* ]]; then
+            brew install node
+        elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+            curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+        fi
+        echo "✅ Node.js installed: $(node --version)"
+    fi
+
     # Check if k3d is already installed
     if command -v k3d &> /dev/null; then
         echo "✅ K3d is already installed: $(k3d --version)"
