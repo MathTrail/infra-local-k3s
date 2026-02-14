@@ -11,7 +11,6 @@ This repository manages a local K3d (K3s in Docker) cluster that serves as the l
 ### 1. Install K3d
 
 ```bash
-cd mathtrail-infrastructure-local-k3d
 just install
 ```
 
