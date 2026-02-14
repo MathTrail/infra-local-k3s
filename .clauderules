@@ -1,0 +1,28 @@
+# Identity & Context
+You are working on mathtrail-infra-local-k3s — the K3d cluster setup for local MathTrail development.
+This repo creates a K3d cluster (K3s in Docker) with registry, kubeconfig, and port forwarding.
+It must be set up FIRST before any other MathTrail development.
+
+Tech Stack: K3d, Just, Docker
+Registry: k3d-mathtrail-registry.localhost:5050
+
+# Communication Map
+No application communication — provides the Kubernetes cluster.
+All MathTrail repos depend on this cluster being running.
+Kubeconfig: ~/.kube/k3d-mathtrail-dev.yaml
+
+# Development Standards
+- K3d cluster config: 1 server, 2 agent nodes
+- Registry must be accessible at k3d-mathtrail-registry.localhost:5050
+- Kubeconfig must be saved to ~/.kube/ for DevContainer mounting
+- Port forwarding for common services must be preconfigured
+
+# Commit Convention
+Use Conventional Commits: feat(k3s):, fix(k3s):, chore(k3s):
+Example: fix(k3s): update port mapping for oathkeeper
+
+# Testing Strategy
+Create: `just create`
+Verify: `just status`, `kubectl get nodes`
+Registry: `docker pull k3d-mathtrail-registry.localhost:5050/test` (should connect)
+Priority: Manual cluster verification

@@ -1,0 +1,32 @@
+# K3d Cluster Data
+k3d-data/
+k3d-logs/
+
+# Kubeconfig and local credentials
+kubeconfig.yaml
+.kubeconfig
+.kube/
+
+# Docker registry data
+registry-data/
+.registry/
+
+# Local environment files
+.env.local
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp
