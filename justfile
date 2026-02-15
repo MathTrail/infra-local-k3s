@@ -149,7 +149,14 @@ clean:
 
 # Build and push the CI runner image to k3d registry
 build-runner:
-    cd runner && just push
+    #!/bin/bash
+    set -e
+    REGISTRY="k3d-mathtrail-registry.localhost:5050"
+    IMAGE="${REGISTRY}/ci-runner"
+    TAG="latest"
+    docker build -t "${IMAGE}:${TAG}" "{{ justfile_directory() }}/runner"
+    docker push "${IMAGE}:${TAG}"
+    echo "✅ Runner image ready"
 
 # Deploy GitHub self-hosted runner to the cluster
 deploy-runner:
