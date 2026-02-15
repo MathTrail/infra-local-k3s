@@ -1,0 +1,25 @@
+# GitHub runner values for local K3s deployment
+# Token is injected via justfile: helm --set github.runnerToken=$GITHUB_RUNNER_TOKEN
+
+image:
+  repository: k3d-mathtrail-registry.localhost:5050/ci-runner
+  tag: latest
+  pullPolicy: Always
+
+github:
+  # Set to org-level URL for org-wide runner, or repo URL for repo-specific
+  url: "https://github.com/MathTrail"
+  # This is overridden by justfile deploy-runner recipe (reads from .env)
+  runnerToken: ""
+
+runnerLabels: "self-hosted,linux,k3s"
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "512Mi"
+  limits:
+    cpu: "2"
+    memory: "2Gi"

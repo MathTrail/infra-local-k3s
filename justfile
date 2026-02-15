@@ -14,6 +14,7 @@ REGISTRY_NAME := "mathtrail-registry"
 REGISTRY_PORT := "5050"
 K3D_PORT_HTTP := "80:80@loadbalancer"
 K3D_PORT_HTTPS := "443:443@loadbalancer"
+CI_NAMESPACE := "mathtrail-ci"
 
 # Full setup: install tools + create cluster
 setup: install install-lens create
@@ -143,3 +144,57 @@ clean:
     DANGLING=$(docker images -q -f dangling=true)
     [ -n "$DANGLING" ] && docker rmi $DANGLING 2>/dev/null || true
     echo "✅ Cleanup complete"
+
+# ── GitHub Runner ────────────────────────────────────────────────────────────
+
+# Build and push the CI runner image to k3d registry
+build-runner:
+    cd runner && just push
+
+# Deploy GitHub self-hosted runner to the cluster
+deploy-runner:
+    #!/bin/bash
+    set -e
+
+    # Load environment
+    if [ -f .env ]; then
+        set -a
+        source .env
+        set +a
+    else
+        echo "❌ Missing .env file. Copy from .env.example and add token:"
+        echo "   cp .env.example .env"
+        echo "   # Edit .env and set GITHUB_RUNNER_TOKEN"
+        exit 1
+    fi
+
+    if [ -z "$GITHUB_RUNNER_TOKEN" ]; then
+        echo "❌ GITHUB_RUNNER_TOKEN not set in .env"
+        exit 1
+    fi
+
+    echo "🚀 Deploying GitHub runner..."
+    kubectl create namespace {{ CI_NAMESPACE }} 2>/dev/null || true
+    helm upgrade --install github-runner ../charts/charts/github-runner \
+        --namespace {{ CI_NAMESPACE }} \
+        --values values/github-runner-values.yaml \
+        --set github.runnerToken="$GITHUB_RUNNER_TOKEN" \
+        --wait
+
+    echo ""
+    echo "✅ GitHub runner deployed!"
+
+# Remove GitHub runner from the cluster
+uninstall-runner:
+    #!/bin/bash
+    set -e
+    echo "🗑️  Removing GitHub runner..."
+    helm uninstall github-runner -n {{ CI_NAMESPACE }} 2>/dev/null || true
+    kubectl delete namespace {{ CI_NAMESPACE }} --ignore-not-found 2>/dev/null || true
+    echo "✅ Runner removed"
+
+# Show GitHub runner status
+runner-status:
+    #!/bin/bash
+    echo "📊 GitHub runner status:"
+    kubectl get pods -n {{ CI_NAMESPACE }} -l app.kubernetes.io/name=github-runner 2>/dev/null || echo "  Not deployed"
