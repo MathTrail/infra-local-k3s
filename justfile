@@ -14,7 +14,7 @@ REGISTRY_NAME := "mathtrail-registry"
 REGISTRY_PORT := "5050"
 K3D_PORT_HTTP := "80:80@loadbalancer"
 K3D_PORT_HTTPS := "443:443@loadbalancer"
-CI_NAMESPACE := "mathtrail-ci"
+CI_NAMESPACE := "gh-runners"
 
 # Full setup: install tools + create cluster
 setup: install install-lens create
