@@ -20,32 +20,13 @@ CI_NAMESPACE := "mathtrail-ci"
 setup: install install-lens create
 
 # Install prerequisites (Docker check is shared, rest is OS-specific)
-install: _check-docker _install-node _install-k3d
+install: _check-docker _install-node _install-k3d _install-buildah
     @echo "✅ All prerequisites installed"
 
 _check-docker:
     #!/bin/bash
     command -v docker &>/dev/null || { echo "❌ Docker is required. Install Docker Desktop first"; exit 1; }
     echo "✅ Docker"
-
-# Install OpenLens pod menu extension (shared helper, called from OS-specific install-lens)
-_install-lens-extension:
-    #!/bin/bash
-    set -e
-    LENS_EXT_DIR="$HOME/.k8slens/extensions"
-    EXT_DIR="$LENS_EXT_DIR/openlens-node-pod-menu"
-    if [ -f "$EXT_DIR/package.json" ]; then
-        echo "✅ Pod menu extension already installed"
-    else
-        echo "📥 Installing OpenLens pod menu extension..."
-        rm -rf "$LENS_EXT_DIR/node_modules" "$LENS_EXT_DIR/package.json" "$LENS_EXT_DIR/package-lock.json"
-        mkdir -p "$EXT_DIR"
-        TMP_DIR=$(mktemp -d)
-        npm install --prefix "$TMP_DIR" @alebcay/openlens-node-pod-menu
-        cp -r "$TMP_DIR/node_modules/@alebcay/openlens-node-pod-menu/"* "$EXT_DIR/"
-        rm -rf "$TMP_DIR"
-        echo "✅ Pod menu extension installed (restart OpenLens to activate)"
-    fi
 
 # Create k3d development cluster
 create:
@@ -148,15 +129,7 @@ clean:
 # ── GitHub Runner ────────────────────────────────────────────────────────────
 
 # Build and push the CI runner image to k3d registry
-build-runner:
-    #!/bin/bash
-    set -e
-    REGISTRY="k3d-mathtrail-registry.localhost:5050"
-    IMAGE="${REGISTRY}/ci-runner"
-    TAG="latest"
-    buildah bud -t "${IMAGE}:${TAG}" "{{ justfile_directory() }}/runner"
-    buildah push --tls-verify=false "${IMAGE}:${TAG}"
-    echo "✅ Runner image ready"
+build-runner: _build-runner
 
 # Deploy GitHub self-hosted runner to the cluster
 deploy-runner:
@@ -192,7 +165,7 @@ deploy-runner:
     echo "✅ GitHub runner deployed!"
 
 # Remove GitHub runner from the cluster
-uninstall-runner:
+delete-runner:
     #!/bin/bash
     set -e
     echo "🗑️  Removing GitHub runner..."
