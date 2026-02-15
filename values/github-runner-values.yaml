@@ -10,7 +10,7 @@ github:
   url: "https://github.com/MathTrail"
   runnerToken: ""
 
-runnerLabels: "self-hosted,linux,k3s"
+runnerLabels: "self-hosted,linux,k3s,buildah-ready"
 
 replicaCount: 1
 
