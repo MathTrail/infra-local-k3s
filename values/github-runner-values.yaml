@@ -26,4 +26,4 @@ buildkit:
   enabled: true
   cacheSize: "10Gi"
   insecureRegistries:
-    - "k3d-mathtrail-registry.localhost:5050"
+    - "k3d-mathtrail-registry:5000"
