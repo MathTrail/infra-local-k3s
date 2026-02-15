@@ -26,12 +26,8 @@ RUN curl -LO "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" \
 ENV PATH="/usr/local/go/bin:${PATH}"
 
 # ── Buildah (rootless container builds) ───────────────────────────────────────
-# Pin Buildah from upstream (distro package may be older)
-ARG BUILDAH_VERSION=1.43.0
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        fuse-overlayfs slirp4netns uidmap \
-    && curl -sSfL "https://github.com/containers/buildah/releases/download/v${BUILDAH_VERSION}/buildah-v${BUILDAH_VERSION}.linux-amd64.tar.gz" \
-        | tar xz -C /usr/local/bin \
+        buildah fuse-overlayfs slirp4netns uidmap \
     && rm -rf /var/lib/apt/lists/*
 
 # Configure Buildah for rootless operation
