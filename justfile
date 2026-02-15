@@ -20,13 +20,8 @@ CI_NAMESPACE := "mathtrail-ci"
 setup: install install-lens create
 
 # Install prerequisites (Docker check is shared, rest is OS-specific)
-install: _check-docker _install-node _install-k3d _install-buildah
+install: _install-node _install-k3d _install-buildah
     @echo "✅ All prerequisites installed"
-
-_check-docker:
-    #!/bin/bash
-    command -v docker &>/dev/null || { echo "❌ Docker is required. Install Docker Desktop first"; exit 1; }
-    echo "✅ Docker"
 
 # Create k3d development cluster
 create:
