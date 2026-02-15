@@ -49,6 +49,9 @@ RUN curl -sSfL "https://github.com/moby/buildkit/releases/download/v${BUILDKIT_V
 # Point buildctl to the buildkitd sidecar by default
 ENV BUILDKIT_HOST="tcp://localhost:1234"
 
+# ── Helm ─────────────────────────────────────────────────────────────────────
+RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
 # ── golangci-lint ────────────────────────────────────────────────────────────
 ARG GOLANGCI_LINT_VERSION=2.9.0
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/refs/tags/v${GOLANGCI_LINT_VERSION}/install.sh \
