@@ -4,8 +4,8 @@ TAG := "latest"
 
 # Build the CI runner image
 build:
-    docker build -t {{ IMAGE }}:{{ TAG }} .
+    buildah bud -t {{ IMAGE }}:{{ TAG }} .
 
 # Build and push to k3d registry
 push: build
-    docker push {{ IMAGE }}:{{ TAG }}
+    buildah push --tls-verify=false {{ IMAGE }}:{{ TAG }}

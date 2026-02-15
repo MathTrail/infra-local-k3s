@@ -7,9 +7,7 @@ image:
   pullPolicy: Always
 
 github:
-  # Set to org-level URL for org-wide runner, or repo URL for repo-specific
   url: "https://github.com/MathTrail"
-  # This is overridden by justfile deploy-runner recipe (reads from .env)
   runnerToken: ""
 
 runnerLabels: "self-hosted,linux,k3s"
@@ -23,3 +21,9 @@ resources:
   limits:
     cpu: "2"
     memory: "2Gi"
+
+buildkit:
+  enabled: true
+  cacheSize: "10Gi"
+  insecureRegistries:
+    - "k3d-mathtrail-registry.localhost:5050"

@@ -154,8 +154,8 @@ build-runner:
     REGISTRY="k3d-mathtrail-registry.localhost:5050"
     IMAGE="${REGISTRY}/ci-runner"
     TAG="latest"
-    docker build -t "${IMAGE}:${TAG}" "{{ justfile_directory() }}/runner"
-    docker push "${IMAGE}:${TAG}"
+    buildah bud -t "${IMAGE}:${TAG}" "{{ justfile_directory() }}/runner"
+    buildah push --tls-verify=false "${IMAGE}:${TAG}"
     echo "✅ Runner image ready"
 
 # Deploy GitHub self-hosted runner to the cluster
