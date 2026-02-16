@@ -11,3 +11,7 @@ _install-ansible:
     echo "📦 Installing Ansible collections..."
     ansible-galaxy collection install -r ansible/requirements.yml --force
     echo "✅ Ansible dependencies installed"
+
+[macos]
+_ansible-playbook *ARGS:
+    ansible-playbook {{ ARGS }}

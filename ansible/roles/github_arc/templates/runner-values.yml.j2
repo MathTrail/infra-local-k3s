@@ -6,6 +6,9 @@ runnerScaleSetName: "{{ runner_scale_set_name }}"
 minRunners: {{ runner_min_replicas }}
 maxRunners: {{ runner_max_replicas }}
 
+containerMode:
+  type: ""
+
 template:
   metadata:
     labels:

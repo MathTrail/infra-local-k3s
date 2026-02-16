@@ -152,16 +152,16 @@ install-arc:
         exit 1
     fi
     echo "🚀 Installing GitHub Actions Runner Controller (ARC)..."
-    cd ansible && ansible-playbook playbooks/install-arc.yml
+    just _ansible-playbook ansible/playbooks/install-arc.yml
     echo ""
     echo "✅ ARC installed! Verify with: just arc-status"
 
-# Uninstall GitHub Actions Runner Controller (ARC)
-uninstall-arc:
+# Delete GitHub Actions Runner Controller (ARC)
+delete-arc:
     #!/bin/bash
     set -e
     echo "🗑️  Uninstalling ARC..."
-    cd ansible && ansible-playbook playbooks/uninstall-arc.yml
+    just _ansible-playbook ansible/playbooks/uninstall-arc.yml
     echo "✅ ARC uninstalled"
 
 # Show ARC runner and controller status
