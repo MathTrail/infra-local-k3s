@@ -21,7 +21,7 @@ ARC_RUNNERS_NAMESPACE := "arc-runners"
 setup: install install-lens create
 
 # Install prerequisites (Docker check is shared, rest is OS-specific)
-install: _install-node _install-k3d _install-buildah
+install: _install-node _install-k3d _install-buildah _install-ansible
     @echo "✅ All prerequisites installed"
 
 # Create k3d development cluster
@@ -128,21 +128,6 @@ clean:
 build-runner: _build-runner
 
 # ── GitHub Actions Runner Controller (ARC) ──────────────────────────────────
-
-# Install Ansible and required collections (one-time setup)
-setup-ansible-deps:
-    #!/bin/bash
-    set -e
-    echo "📦 Installing Ansible dependencies..."
-    if ! command -v ansible &>/dev/null; then
-        echo "Installing Ansible..."
-        pip3 install --user ansible
-    else
-        echo "✅ Ansible already installed"
-    fi
-    echo "Installing Ansible collections..."
-    ansible-galaxy collection install -r ansible/requirements.yml --force
-    echo "✅ Ansible dependencies installed"
 
 # Install GitHub Actions Runner Controller (ARC) via Ansible
 install-arc:
