@@ -70,3 +70,8 @@ RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/refs/tag
 
 # ── Back to runner user ──────────────────────────────────────────────────────
 USER runner
+
+# ── ARC entrypoint ───────────────────────────────────────────────────────────
+# The base image sets CMD ["/bin/bash"] with no ENTRYPOINT.
+# ARC injects ACTIONS_RUNNER_INPUT_JITCONFIG via env, and run.sh picks it up.
+ENTRYPOINT ["/home/runner/run.sh"]

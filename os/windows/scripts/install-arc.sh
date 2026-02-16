@@ -29,7 +29,7 @@ GITHUB_CONFIG_URL="https://github.com/MathTrail"
 RUNNER_IMAGE_REPOSITORY="k3d-mathtrail-registry.localhost:5050/ci-runner"
 RUNNER_IMAGE_TAG="latest"
 RUNNER_SCALE_SET_NAME="mathtrail-runners"
-RUNNER_MIN_REPLICAS=0
+RUNNER_MIN_REPLICAS=1
 RUNNER_MAX_REPLICAS=5
 
 BUILDKIT_ENABLED=true
