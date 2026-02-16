@@ -130,7 +130,7 @@ Runners use the custom image with a BuildKit sidecar for container builds.
 Workflows target these runners with:
 
 ```yaml
-runs-on: [self-hosted, linux, k3s, buildah-ready]
+runs-on: mathtrail-runners
 ```
 
 ## DevContainer Integration
