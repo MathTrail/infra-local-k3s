@@ -15,6 +15,7 @@ template:
       app: github-runner
       runner-set: "{{ runner_scale_set_name }}"
   spec:
+    serviceAccountName: arc-runner-sa
     containers:
       - name: runner
         image: "{{ runner_image_repository }}:{{ runner_image_tag }}"

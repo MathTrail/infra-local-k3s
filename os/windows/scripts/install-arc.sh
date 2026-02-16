@@ -73,6 +73,49 @@ $KC create secret generic github-app-credentials \
     --from-literal="github_app_private_key=$PRIVATE_KEY_CONTENT" \
     --dry-run=client -o yaml | $KC apply -f -
 
+echo "🔐 Creating RBAC for runner service account..."
+$KC apply -f - <<RBAC_EOF
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: arc-runner-sa
+  namespace: ${ARC_RUNNERS_NAMESPACE}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: arc-runner-cluster-role
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces", "pods", "services", "configmaps", "secrets", "persistentvolumeclaims", "serviceaccounts"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "replicasets", "daemonsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses", "networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: arc-runner-cluster-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: arc-runner-sa
+    namespace: ${ARC_RUNNERS_NAMESPACE}
+roleRef:
+  kind: ClusterRole
+  name: arc-runner-cluster-role
+  apiGroup: rbac.authorization.k8s.io
+RBAC_EOF
+
 if [ "$BUILDKIT_ENABLED" = true ]; then
     echo "🔧 Creating BuildKit configuration ConfigMap..."
     BUILDKITD_TOML=""
@@ -157,6 +200,7 @@ template:
       app: github-runner
       runner-set: "${RUNNER_SCALE_SET_NAME}"
   spec:
+    serviceAccountName: arc-runner-sa
     containers:
       - name: runner
         image: "${RUNNER_IMAGE_REPOSITORY}:${RUNNER_IMAGE_TAG}"
