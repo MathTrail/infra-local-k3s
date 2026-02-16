@@ -52,6 +52,12 @@ ENV BUILDKIT_HOST="tcp://localhost:1234"
 # ── Helm ─────────────────────────────────────────────────────────────────────
 RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
+# ── Skaffold ─────────────────────────────────────────────────────────────────
+ARG SKAFFOLD_VERSION=2.17.2
+RUN curl -Lo /tmp/skaffold "https://github.com/GoogleContainerTools/skaffold/releases/download/v${SKAFFOLD_VERSION}/skaffold-linux-amd64" \
+    && install /tmp/skaffold /usr/local/bin/skaffold \
+    && rm -f /tmp/skaffold
+
 # ── esbuild (k6 load test bundling) ─────────────────────────────────────────
 ARG ESBUILD_VERSION=0.27.3
 RUN curl -fsSL "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-${ESBUILD_VERSION}.tgz" \
