@@ -1,0 +1,8 @@
+---
+- name: Install GitHub Actions Runner Controller (ARC)
+  hosts: localhost
+  gather_facts: false
+
+  roles:
+    - role: github_arc
+      arc_state: present

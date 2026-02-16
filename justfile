@@ -14,7 +14,8 @@ REGISTRY_NAME := "mathtrail-registry"
 REGISTRY_PORT := "5050"
 K3D_PORT_HTTP := "80:80@loadbalancer"
 K3D_PORT_HTTPS := "443:443@loadbalancer"
-CI_NAMESPACE := "gh-runners"
+ARC_NAMESPACE := "arc-systems"
+ARC_RUNNERS_NAMESPACE := "arc-runners"
 
 # Full setup: install tools + create cluster
 setup: install install-lens create
@@ -121,57 +122,71 @@ clean:
     [ -n "$DANGLING" ] && docker rmi $DANGLING 2>/dev/null || true
     echo "✅ Cleanup complete"
 
-# ── GitHub Runner ────────────────────────────────────────────────────────────
+# ── CI Runner Image ─────────────────────────────────────────────────────────
 
 # Build and push the CI runner image to k3d registry
 build-runner: _build-runner
 
-# Deploy GitHub self-hosted runner to the cluster
-deploy-runner:
+# ── GitHub Actions Runner Controller (ARC) ──────────────────────────────────
+
+# Install Ansible and required collections (one-time setup)
+setup-ansible-deps:
     #!/bin/bash
     set -e
-
-    # Load environment
-    if [ -f .env ]; then
-        set -a
-        source .env
-        set +a
+    echo "📦 Installing Ansible dependencies..."
+    if ! command -v ansible &>/dev/null; then
+        echo "Installing Ansible..."
+        pip3 install --user ansible
     else
-        echo "❌ Missing .env file. Copy from .env.example and add token:"
-        echo "   cp .env.example .env"
-        echo "   # Edit .env and set GITHUB_RUNNER_TOKEN"
-        exit 1
+        echo "✅ Ansible already installed"
     fi
+    echo "Installing Ansible collections..."
+    ansible-galaxy collection install -r ansible/requirements.yml --force
+    echo "✅ Ansible dependencies installed"
 
-    if [ -z "$GITHUB_RUNNER_TOKEN" ]; then
-        echo "❌ GITHUB_RUNNER_TOKEN not set in .env"
-        exit 1
-    fi
-
-    echo "🚀 Deploying GitHub runner..."
-    kubectl create namespace {{ CI_NAMESPACE }} 2>/dev/null || true
-    helm repo add mathtrail-charts https://MathTrail.github.io/charts/charts 2>/dev/null || true
-    helm repo update
-    helm upgrade --install github-runner mathtrail-charts/github-runner \
-        --namespace {{ CI_NAMESPACE }} \
-        --values values/github-runner-values.yaml \
-        --set github.runnerToken="$GITHUB_RUNNER_TOKEN" \
-        --wait
-
-    echo ""
-    echo "✅ GitHub runner deployed!"
-
-# Remove GitHub runner from the cluster
-delete-runner:
+# Install GitHub Actions Runner Controller (ARC) via Ansible
+install-arc:
     #!/bin/bash
     set -e
-    echo "🗑️  Removing GitHub runner..."
-    helm uninstall github-runner -n {{ CI_NAMESPACE }} 2>/dev/null || true
-    kubectl delete namespace {{ CI_NAMESPACE }} --ignore-not-found 2>/dev/null || true
-    echo "✅ Runner removed"
+    if [ ! -f .env ]; then
+        echo "❌ Missing .env file. Copy from .env.example:"
+        echo "   cp .env.example .env"
+        echo "   # Set GitHub App credentials"
+        exit 1
+    fi
+    set -a
+    source .env
+    set +a
+    if [ -z "$GITHUB_APP_ID" ] || [ -z "$GITHUB_APP_INSTALLATION_ID" ] || [ -z "$GITHUB_APP_PRIVATE_KEY_PATH" ]; then
+        echo "❌ GitHub App credentials not set in .env"
+        echo "   Required: GITHUB_APP_ID, GITHUB_APP_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY_PATH"
+        exit 1
+    fi
+    if [ ! -f "$GITHUB_APP_PRIVATE_KEY_PATH" ]; then
+        echo "❌ GitHub App private key not found at: $GITHUB_APP_PRIVATE_KEY_PATH"
+        exit 1
+    fi
+    echo "🚀 Installing GitHub Actions Runner Controller (ARC)..."
+    cd ansible && ansible-playbook playbooks/install-arc.yml
+    echo ""
+    echo "✅ ARC installed! Verify with: just arc-status"
 
-# Show GitHub runner status
-runner-status:
+# Uninstall GitHub Actions Runner Controller (ARC)
+uninstall-arc:
     #!/bin/bash
-    echo "📊 GitHub runner status:"
-    kubectl get pods -n {{ CI_NAMESPACE }} -l app.kubernetes.io/name=github-runner 2>/dev/null || echo "  Not deployed"
+    set -e
+    echo "🗑️  Uninstalling ARC..."
+    cd ansible && ansible-playbook playbooks/uninstall-arc.yml
+    echo "✅ ARC uninstalled"
+
+# Show ARC runner and controller status
+arc-status:
+    #!/bin/bash
+    echo "📊 ARC Controller:"
+    kubectl get pods -n {{ ARC_NAMESPACE }} 2>/dev/null || echo "  Not deployed"
+    echo ""
+    echo "📊 Runner Pods:"
+    kubectl get pods -n {{ ARC_RUNNERS_NAMESPACE }} 2>/dev/null || echo "  No active runners"
+    echo ""
+    echo "📊 AutoScalingRunnerSet:"
+    kubectl get autoscalingrunnersets -n {{ ARC_RUNNERS_NAMESPACE }} 2>/dev/null || echo "  Not configured"

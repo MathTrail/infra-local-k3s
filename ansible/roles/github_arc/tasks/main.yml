@@ -1,0 +1,39 @@
+---
+- name: Validate GitHub App credentials
+  ansible.builtin.assert:
+    that:
+      - github_app_id | length > 0
+      - github_app_installation_id | length > 0
+      - github_app_private_key_path | length > 0
+    fail_msg: >-
+      GitHub App credentials not set.
+      Ensure GITHUB_APP_ID, GITHUB_APP_INSTALLATION_ID, and
+      GITHUB_APP_PRIVATE_KEY_PATH are exported (see .env.example).
+  when: arc_state == "present"
+
+- name: Check GitHub App private key exists
+  ansible.builtin.stat:
+    path: "{{ github_app_private_key_path }}"
+  register: _private_key_file
+  when: arc_state == "present"
+
+- name: Fail if private key not found
+  ansible.builtin.fail:
+    msg: "GitHub App private key not found at {{ github_app_private_key_path }}"
+  when: arc_state == "present" and not _private_key_file.stat.exists
+
+- name: Install ARC
+  when: arc_state == "present"
+  block:
+    - name: Set up prerequisites
+      ansible.builtin.include_tasks: prerequisites.yml
+
+    - name: Install ARC controller
+      ansible.builtin.include_tasks: install-controller.yml
+
+    - name: Install ARC runner scale set
+      ansible.builtin.include_tasks: install-runner-set.yml
+
+- name: Uninstall ARC
+  ansible.builtin.include_tasks: uninstall.yml
+  when: arc_state == "absent"

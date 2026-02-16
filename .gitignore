@@ -28,6 +28,14 @@ Thumbs.db
 *.swo
 *~
 
+# GitHub App credentials
+*.pem
+.github-app-private-key.pem
+
+# Ansible
+ansible/*.retry
+ansible/playbooks/*.retry
+
 # Temporary files
 tmp/
 temp/

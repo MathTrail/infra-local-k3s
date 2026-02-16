@@ -1,0 +1,37 @@
+---
+# Kubernetes configuration
+k3s_kubeconfig: "{{ lookup('env', 'HOME') }}/.kube/k3d-mathtrail-dev.yaml"
+k3s_context: "k3d-mathtrail-dev"
+
+# Namespace configuration
+arc_namespace: "arc-systems"
+arc_runners_namespace: "arc-runners"
+
+# GitHub App credentials (exported by justfile from .env)
+github_app_id: "{{ lookup('env', 'GITHUB_APP_ID') }}"
+github_app_installation_id: "{{ lookup('env', 'GITHUB_APP_INSTALLATION_ID') }}"
+github_app_private_key_path: "{{ lookup('env', 'GITHUB_APP_PRIVATE_KEY_PATH') | default('.github-app-private-key.pem', true) }}"
+
+# GitHub configuration
+github_config_url: "https://github.com/MathTrail"
+
+# Runner configuration
+runner_image_repository: "k3d-mathtrail-registry.localhost:5050/ci-runner"
+runner_image_tag: "latest"
+runner_scale_set_name: "mathtrail-runners"
+runner_min_replicas: 0
+runner_max_replicas: 5
+
+# BuildKit sidecar configuration
+buildkit_enabled: true
+buildkit_image: "moby/buildkit:v0.27.1-rootless"
+buildkit_port: 1234
+buildkit_cache_size: "10Gi"
+buildkit_insecure_registries:
+  - "k3d-mathtrail-registry:5000"
+
+# ARC Helm chart configuration
+arc_controller_chart: "oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller"
+arc_controller_version: "0.10.1"
+arc_runner_set_chart: "oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set"
+arc_runner_set_version: "0.10.1"
