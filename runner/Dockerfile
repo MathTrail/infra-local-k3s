@@ -52,6 +52,11 @@ ENV BUILDKIT_HOST="tcp://localhost:1234"
 # ── Helm ─────────────────────────────────────────────────────────────────────
 RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
+# ── esbuild (k6 load test bundling) ─────────────────────────────────────────
+ARG ESBUILD_VERSION=0.27.3
+RUN curl -fsSL "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-${ESBUILD_VERSION}.tgz" \
+    | tar xz --strip-components=2 -C /usr/local/bin package/bin/esbuild
+
 # ── golangci-lint ────────────────────────────────────────────────────────────
 ARG GOLANGCI_LINT_VERSION=2.9.0
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/refs/tags/v${GOLANGCI_LINT_VERSION}/install.sh \

@@ -150,7 +150,9 @@ deploy-runner:
 
     echo "🚀 Deploying GitHub runner..."
     kubectl create namespace {{ CI_NAMESPACE }} 2>/dev/null || true
-    helm upgrade --install github-runner ../charts/charts/github-runner \
+    helm repo add mathtrail-charts https://MathTrail.github.io/charts/charts 2>/dev/null || true
+    helm repo update
+    helm upgrade --install github-runner mathtrail-charts/github-runner \
         --namespace {{ CI_NAMESPACE }} \
         --values values/github-runner-values.yaml \
         --set github.runnerToken="$GITHUB_RUNNER_TOKEN" \
