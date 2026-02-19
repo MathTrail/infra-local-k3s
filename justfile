@@ -33,12 +33,12 @@ create:
     REGISTRY_PORT="{{ REGISTRY_PORT }}"
     REGISTRY_FULL="k3d-${REGISTRY_NAME}:${REGISTRY_PORT}"
 
-    if k3d cluster list | grep -q "$CLUSTER_NAME"; then
-        if ! kubectl cluster-info --context k3d-$CLUSTER_NAME &>/dev/null 2>&1; then
+    if k3d cluster list | grep -q "${CLUSTER_NAME}"; then
+        if ! kubectl cluster-info --context k3d-${CLUSTER_NAME} &>/dev/null 2>&1; then
             echo "⚠️  Cluster is in bad state, removing..."
             just delete
         else
-            echo "✅ Cluster '$CLUSTER_NAME' already exists and healthy"
+            echo "✅ Cluster '${CLUSTER_NAME}' already exists and healthy"
             exit 0
         fi
     fi
@@ -51,8 +51,8 @@ create:
         k3d registry create "$REGISTRY_NAME" --port "$REGISTRY_PORT"
     fi
 
-    echo "Creating k3d cluster '$CLUSTER_NAME'..."
-    k3d cluster create "$CLUSTER_NAME" \
+    echo "Creating k3d cluster '${CLUSTER_NAME}'..."
+    k3d cluster create "${CLUSTER_NAME}" \
         --servers 1 \
         --agents 2 \
         --port "{{ K3D_PORT_HTTP }}" \
@@ -71,8 +71,8 @@ delete:
     set -e
     CLUSTER_NAME="{{ CLUSTER_NAME }}"
     REGISTRY_NAME="{{ REGISTRY_NAME }}"
-    if k3d cluster list | grep -q "$CLUSTER_NAME"; then
-        k3d cluster delete "$CLUSTER_NAME" --all
+    if k3d cluster list | grep -q "${CLUSTER_NAME}"; then
+        k3d cluster delete "${CLUSTER_NAME}" --all
         echo "✅ Cluster deleted"
     else
         echo "⚠️  Cluster does not exist"
