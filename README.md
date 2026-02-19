@@ -81,10 +81,10 @@ ARC provides auto-scaling ephemeral runners authenticated via a GitHub App.
 
 ### Prerequisites
 
-1. Install Ansible and required collections (one-time):
+1. Ansible and required Galaxy collections are installed automatically as part of `just install`. If you skipped the full install, run it now:
 
    ```bash
-   just setup-ansible-deps
+   just install
    ```
 
 2. Create a GitHub App at `https://github.com/organizations/MathTrail/settings/apps/new` with permissions:
@@ -93,7 +93,7 @@ ARC provides auto-scaling ephemeral runners authenticated via a GitHub App.
 
 3. Install the app to the MathTrail organization and note the **Installation ID** from the URL.
 
-4. Generate a private key (`.pem` file) from the app settings.
+4. Generate a private key (`.pem` file) from the app settings and save it as `.github-app-private-key.pem` in the project root.
 
 5. Configure credentials:
 
@@ -105,13 +105,14 @@ ARC provides auto-scaling ephemeral runners authenticated via a GitHub App.
 ### Deploy
 
 ```bash
+just install        # installs all prerequisites including Ansible (if not done already)
 just build-runner   # build custom runner image (if not done already)
 just install-arc    # deploy ARC controller + runner scale set
 ```
 
 This creates:
 - **arc-systems** namespace — ARC controller
-- **arc-runners** namespace — runner pods (auto-scaled 0-5)
+- **arc-runners** namespace — runner pods (auto-scaled 1-5)
 
 Runners use the custom image with a BuildKit sidecar for container builds.
 
@@ -119,9 +120,8 @@ Runners use the custom image with a BuildKit sidecar for container builds.
 
 | Command | Description |
 |---------|-------------|
-| `just setup-ansible-deps` | Install Ansible + `kubernetes.core` collection |
 | `just install-arc` | Deploy ARC controller and runner scale set |
-| `just uninstall-arc` | Remove ARC from cluster |
+| `just delete-arc` | Remove ARC from cluster |
 | `just arc-status` | Show controller, runner pods, and scaling status |
 | `just build-runner` | Build and push the CI runner image |
 
@@ -214,4 +214,10 @@ kubectl logs -n arc-systems -l app.kubernetes.io/name=gha-runner-scale-set-contr
 
 ```bash
 kubectl describe autoscalingrunnersets -n arc-runners
+```
+
+**Remove ARC completely:**
+
+```bash
+just delete-arc
 ```
