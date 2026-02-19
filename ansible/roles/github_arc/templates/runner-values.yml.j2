@@ -1,0 +1,92 @@
+githubConfigUrl: "{{ github_config_url }}"
+githubConfigSecret: github-app-credentials
+
+runnerScaleSetName: "{{ runner_scale_set_name }}"
+
+minRunners: {{ runner_min_replicas }}
+maxRunners: {{ runner_max_replicas }}
+
+containerMode:
+  type: ""
+
+template:
+  metadata:
+    labels:
+      app: github-runner
+      runner-set: "{{ runner_scale_set_name }}"
+  spec:
+    serviceAccountName: arc-runner-sa
+    containers:
+      - name: runner
+        image: "{{ runner_image_repository }}:{{ runner_image_tag }}"
+        imagePullPolicy: Always
+        env:
+          - name: BUILDKIT_HOST
+            value: "tcp://localhost:{{ buildkit_port }}"
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "2"
+            memory: "2Gi"
+        volumeMounts:
+          - name: work
+            mountPath: /runner/_work
+{% if buildkit_enabled %}
+      - name: buildkitd
+        image: "{{ buildkit_image }}"
+        imagePullPolicy: IfNotPresent
+        args:
+          - --addr
+          - "tcp://0.0.0.0:{{ buildkit_port }}"
+          - --oci-worker-no-process-sandbox
+          - --config
+          - /etc/buildkit/buildkitd.toml
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          seccompProfile:
+            type: Unconfined
+        ports:
+          - containerPort: {{ buildkit_port }}
+            protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+              - buildctl
+              - --addr
+              - "tcp://localhost:{{ buildkit_port }}"
+              - debug
+              - workers
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+        volumeMounts:
+          - name: buildkit-cache
+            mountPath: /home/user/.local/share/buildkit
+          - name: buildkitd-config
+            mountPath: /etc/buildkit
+            readOnly: true
+{% endif %}
+    volumes:
+      - name: work
+        emptyDir: {}
+{% if buildkit_enabled %}
+      - name: buildkit-cache
+        emptyDir:
+          sizeLimit: "{{ buildkit_cache_size }}"
+      - name: buildkitd-config
+        configMap:
+          name: buildkitd-config
+{% endif %}
+
+controllerServiceAccount:
+  name: arc-controller
+  namespace: "{{ arc_namespace }}"

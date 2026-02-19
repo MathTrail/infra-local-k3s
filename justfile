@@ -14,37 +14,15 @@ REGISTRY_NAME := "mathtrail-registry"
 REGISTRY_PORT := "5050"
 K3D_PORT_HTTP := "80:80@loadbalancer"
 K3D_PORT_HTTPS := "443:443@loadbalancer"
+ARC_NAMESPACE := "arc-systems"
+ARC_RUNNERS_NAMESPACE := "arc-runners"
 
 # Full setup: install tools + create cluster
 setup: install install-lens create
 
 # Install prerequisites (Docker check is shared, rest is OS-specific)
-install: _check-docker _install-node _install-k3d
+install: _install-node _install-k3d _install-buildah _install-ansible
     @echo "✅ All prerequisites installed"
-
-_check-docker:
-    #!/bin/bash
-    command -v docker &>/dev/null || { echo "❌ Docker is required. Install Docker Desktop first"; exit 1; }
-    echo "✅ Docker"
-
-# Install OpenLens pod menu extension (shared helper, called from OS-specific install-lens)
-_install-lens-extension:
-    #!/bin/bash
-    set -e
-    LENS_EXT_DIR="$HOME/.k8slens/extensions"
-    EXT_DIR="$LENS_EXT_DIR/openlens-node-pod-menu"
-    if [ -f "$EXT_DIR/package.json" ]; then
-        echo "✅ Pod menu extension already installed"
-    else
-        echo "📥 Installing OpenLens pod menu extension..."
-        rm -rf "$LENS_EXT_DIR/node_modules" "$LENS_EXT_DIR/package.json" "$LENS_EXT_DIR/package-lock.json"
-        mkdir -p "$EXT_DIR"
-        TMP_DIR=$(mktemp -d)
-        npm install --prefix "$TMP_DIR" @alebcay/openlens-node-pod-menu
-        cp -r "$TMP_DIR/node_modules/@alebcay/openlens-node-pod-menu/"* "$EXT_DIR/"
-        rm -rf "$TMP_DIR"
-        echo "✅ Pod menu extension installed (restart OpenLens to activate)"
-    fi
 
 # Create k3d development cluster
 create:
@@ -143,3 +121,57 @@ clean:
     DANGLING=$(docker images -q -f dangling=true)
     [ -n "$DANGLING" ] && docker rmi $DANGLING 2>/dev/null || true
     echo "✅ Cleanup complete"
+
+# ── CI Runner Image ─────────────────────────────────────────────────────────
+
+# Build and push the CI runner image to k3d registry
+build-runner: _build-runner
+
+# ── GitHub Actions Runner Controller (ARC) ──────────────────────────────────
+
+# Install GitHub Actions Runner Controller (ARC) via Ansible
+install-arc:
+    #!/bin/bash
+    set -e
+    if [ ! -f .env ]; then
+        echo "❌ Missing .env file. Copy from .env.example:"
+        echo "   cp .env.example .env"
+        echo "   # Set GitHub App credentials"
+        exit 1
+    fi
+    set -a
+    source .env
+    set +a
+    if [ -z "$GITHUB_APP_ID" ] || [ -z "$GITHUB_APP_INSTALLATION_ID" ] || [ -z "$GITHUB_APP_PRIVATE_KEY_PATH" ]; then
+        echo "❌ GitHub App credentials not set in .env"
+        echo "   Required: GITHUB_APP_ID, GITHUB_APP_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY_PATH"
+        exit 1
+    fi
+    if [ ! -f "$GITHUB_APP_PRIVATE_KEY_PATH" ]; then
+        echo "❌ GitHub App private key not found at: $GITHUB_APP_PRIVATE_KEY_PATH"
+        exit 1
+    fi
+    echo "🚀 Installing GitHub Actions Runner Controller (ARC)..."
+    just _ansible-playbook ansible/playbooks/install-arc.yml
+    echo ""
+    echo "✅ ARC installed! Verify with: just arc-status"
+
+# Delete GitHub Actions Runner Controller (ARC)
+delete-arc:
+    #!/bin/bash
+    set -e
+    echo "🗑️  Uninstalling ARC..."
+    just _ansible-playbook ansible/playbooks/uninstall-arc.yml
+    echo "✅ ARC uninstalled"
+
+# Show ARC runner and controller status
+arc-status:
+    #!/bin/bash
+    echo "📊 ARC Controller:"
+    kubectl get pods -n {{ ARC_NAMESPACE }} 2>/dev/null || echo "  Not deployed"
+    echo ""
+    echo "📊 Runner Pods:"
+    kubectl get pods -n {{ ARC_RUNNERS_NAMESPACE }} 2>/dev/null || echo "  No active runners"
+    echo ""
+    echo "📊 AutoScalingRunnerSet:"
+    kubectl get autoscalingrunnersets -n {{ ARC_RUNNERS_NAMESPACE }} 2>/dev/null || echo "  Not configured"

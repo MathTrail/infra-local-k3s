@@ -1,0 +1,4 @@
+---
+arc_state: "present"
+arc_force_reinstall: false
+arc_wait_timeout: 300

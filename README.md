@@ -1,123 +1,171 @@
-# MathTrail Infrastructure Local K3d
+# MathTrail Local K3d Infrastructure
 
-Local Kubernetes cluster setup using K3d for MathTrail development environment.
-
-## Overview
-
-This repository manages a local K3d (K3s in Docker) cluster that serves as the local development Kubernetes environment for MathTrail. The cluster can be created and managed from your host machine, and DevContainers across the workspace can deploy services to it using Helm.
+Local Kubernetes cluster setup using K3d for MathTrail development.
 
 ## Quick Start
 
-### 1. Install K3d
-
 ```bash
-cd mathtrail-infrastructure-local-k3d
-just install
+just setup        # install tools + create cluster + install OpenLens
 ```
 
-### 2. Create Development Cluster
+Or step by step:
 
 ```bash
-just create
+just install      # install prerequisites (k3d, Node.js, Buildah)
+just create       # create k3d cluster with registry
+just kubeconfig   # save kubeconfig to ~/.kube/
+just status       # verify cluster health
 ```
 
-This creates a K3d cluster with:
-- 1 server node (control plane)
-- 2 agent nodes (workers)
-- Built-in container registry for image caching (automatically managed by K3d)
-- Port forwarding for HTTP/HTTPS traffic
+## Cluster Configuration
 
-### 3. Get Kubeconfig
+`just create` provisions a K3d cluster with:
+
+- **1 server** node (control plane) + **2 agent** nodes (workers)
+- Container registry at `k3d-mathtrail-registry.localhost:5050`
+- Port forwarding: HTTP (80), HTTPS (443)
+- Kubeconfig at `~/.kube/k3d-mathtrail-dev.yaml`
+
+## Cluster Commands
+
+| Command | Description |
+|---------|-------------|
+| `just create` | Create cluster + registry (idempotent) |
+| `just delete` | Delete cluster and registry |
+| `just start` | Start a stopped cluster |
+| `just stop` | Stop running cluster |
+| `just status` | Show cluster info |
+| `just kubeconfig` | Regenerate and merge kubeconfig |
+| `just clean` | Remove stopped containers and dangling images |
+| `just install-lens` | Install OpenLens Kubernetes IDE |
+| `just lens` | Launch OpenLens |
+
+## Container Registry
+
+The cluster includes a local Docker registry:
+
+| Context | URL |
+|---------|-----|
+| From host | `k3d-mathtrail-registry.localhost:5050` |
+| Inside cluster | `k3d-mathtrail-registry:5000` |
+
+Push images from the host (example using Buildah):
 
 ```bash
-just kubeconfig
+buildah bud -t k3d-mathtrail-registry.localhost:5050/myapp:latest .
+buildah push --tls-verify=false k3d-mathtrail-registry.localhost:5050/myapp:latest
 ```
 
-This saves the cluster configuration to `~/.kube/k3d-mathtrail-dev.yaml` and makes it accessible to DevContainers.
+In Kubernetes manifests, reference images as:
 
-### 4. Verify Cluster
+```yaml
+image: k3d-mathtrail-registry.localhost:5050/myapp:latest
+```
+
+## CI Runner Image
+
+The `runner/` directory contains a custom GitHub Actions runner image with the full CI toolchain:
+Go, kubectl, Helm, Skaffold, Buildah, BuildKit, esbuild, golangci-lint, Just.
 
 ```bash
-just status
+just build-runner   # build and push runner image to k3d registry
 ```
 
-### 5. Deploy Infrastructure Services
+The image is based on `ghcr.io/actions/actions-runner` and is used by ARC runner pods (see below).
 
-> **Note:** Run these commands inside a DevContainer that has `helm` and `kubectl` configured with access to the cluster (see [DevContainer Integration](#devcontainer-integration) below).
+## GitHub Actions Runner Controller (ARC)
+
+Self-hosted GitHub Actions runners are deployed via the official [Actions Runner Controller](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners-with-actions-runner-controller) (ARC), managed with Ansible.
+
+ARC provides auto-scaling ephemeral runners authenticated via a GitHub App.
+
+### Prerequisites
+
+1. Ansible and required Galaxy collections are installed automatically as part of `just install`. If you skipped the full install, run it now:
+
+   ```bash
+   just install
+   ```
+
+2. Create a GitHub App at `https://github.com/organizations/MathTrail/settings/apps/new` with permissions:
+   - Repository: **Actions** (R/W), **Administration** (R/W), **Metadata** (Read)
+   - Organization: **Self-hosted runners** (R/W)
+
+3. Install the app to the MathTrail organization and note the **Installation ID** from the URL.
+
+4. Generate a private key (`.pem` file) from the app settings and save it as `.github-app-private-key.pem` in the project root.
+
+5. Configure credentials:
+
+   ```bash
+   cp .env.example .env
+   # Edit .env with your App ID, Installation ID, and path to .pem file
+   ```
+
+### Deploy
 
 ```bash
-cd infra
-just deploy
+just install        # installs all prerequisites including Ansible (if not done already)
+just build-runner   # build custom runner image (if not done already)
+just install-arc    # deploy ARC controller + runner scale set
 ```
 
-This deploys the infrastructure used in local development to the cluster using Helm charts from the MathTrail charts repository.
+This creates:
+- **arc-systems** namespace — ARC controller
+- **arc-runners** namespace — runner pods (auto-scaled 1-5)
 
-### 6. Remove Infrastructure Services
+Runners use the custom image with a BuildKit sidecar for container builds.
 
-To tear down all deployed infrastructure services, run inside the DevContainer:
+### ARC Commands
 
-```bash
-cd infra
-just uninstall
+| Command | Description |
+|---------|-------------|
+| `just install-arc` | Deploy ARC controller and runner scale set |
+| `just delete-arc` | Remove ARC from cluster |
+| `just arc-status` | Show controller, runner pods, and scaling status |
+| `just build-runner` | Build and push the CI runner image |
+
+### Runner Labels
+
+Workflows target these runners with:
+
+```yaml
+runs-on: mathtrail-runners
 ```
-
-This removes all local infrastructure from the cluster.
 
 ## DevContainer Integration
 
-### For Helm Deployments from DevContainer
+All MathTrail repos use DevContainers that connect to this cluster via mounted kubeconfig.
 
-To deploy services from other DevContainers (like `mathtrail-mentor`):
+### Host Setup
 
-#### 1. Host Machine Setup
-
-First, ensure the cluster is running and kubeconfig is available:
+Ensure the cluster is running and kubeconfig is generated:
 
 ```bash
-# In mathtrail-infrastructure-local-k3d directory
-just create          # Create cluster once
-just kubeconfig      # Generate kubeconfig file
+just create
+just kubeconfig
 ```
 
-#### 2. DevContainer Configuration
+### DevContainer Configuration
 
-Update your DevContainer's `devcontainer.json` to mount the kubeconfig:
+Mount the kubeconfig in `devcontainer.json`:
 
 ```jsonc
 {
-    "features": {
-        "ghcr.io/devcontainers/features/kubectl:1.29.0": {},
-        "ghcr.io/devcontainers/features/helm:3.14.0": {}
-        // ... other features
-    },
-    "mounts": [
-        "source=${localEnv:HOME}/.kube,target=/root/.kube,type=bind,readonly"
-    ],
-    "remoteEnv": {
-        "KUBECONFIG": "/root/.kube/k3d-mathtrail-dev.yaml"
-    }
+  "mounts": [
+    "source=${localEnv:HOME}/.kube,target=/home/vscode/.kube,type=bind,readonly"
+  ],
+  "remoteEnv": {
+    "KUBECONFIG": "/home/vscode/.kube/k3d-mathtrail-dev.yaml"
+  }
 }
 ```
 
-#### 3. Verify Access from DevContainer
-
-Inside the DevContainer:
+Verify from inside the DevContainer:
 
 ```bash
-kubectl cluster-info
 kubectl get nodes
-helm list
-```
-
-### Deploying Applications
-
-Example deployment from mathtrail-mentor DevContainer:
-
-```bash
-# Inside DevContainer
-helm upgrade --install mathtrail-mentor ./helm/mathtrail-mentor \
-    --values ./helm/mathtrail-mentor/values.yaml \
-    --kubeconfig /root/.kube/k3d-mathtrail-dev.yaml
+helm list -A
 ```
 
 ## Architecture
@@ -126,113 +174,50 @@ helm upgrade --install mathtrail-mentor ./helm/mathtrail-mentor \
 Host Machine
 ├── Docker Desktop / Docker Engine
 │   └── K3d Cluster (mathtrail-dev)
-│       ├── Server Node (Control Plane)
+│       ├── Server Node (control plane)
 │       ├── Agent Node 1
 │       ├── Agent Node 2
-│       ├── Local Registry (port 5000)
-│       └── Ingress Controller
+│       └── Registry (k3d-mathtrail-registry:5050)
 │
-└── DevContainers
-    ├── mathtrail-mentor
-    ├── mathtrail-ui-web
-    └── mathtrail-ui-chatgpt
-    (All can access cluster via kubeconfig)
+├── DevContainers (access cluster via kubeconfig)
+│   ├── mentor-api
+│   ├── mathtrail (orchestrator)
+│   └── ...
+│
+└── ARC (GitHub Actions Runner Controller)
+    ├── arc-systems    → controller pod
+    └── arc-runners    → ephemeral runner pods + BuildKit sidecars
 ```
-
-## Networking
-
-### Port Forwarding
-
-The cluster exposes:
-- **HTTP**: localhost:80 → cluster ingress
-- **HTTPS**: localhost:443 → cluster ingress
-- **Registry**: localhost:5000 → local Docker registry
-
-### DevContainer to Host Cluster Communication
-
-- On Linux: Direct access via Docker network
-- On macOS/Windows: Access via `host.docker.internal` or Docker Desktop networking
-- Kubeconfig provides necessary connection details
-
-## Container Image Registry
-
-The K3d cluster includes a built-in Docker registry that is automatically managed. This registry is accessible from within the cluster at:
-
-**Registry URL (inside cluster)**: `k3d-registry.localhost:5000`
-
-**Push images from host:**
-
-```bash
-# Build image locally
-docker build -t myapp:latest .
-
-# Tag for registry (using docker.io registry for host access)
-docker tag myapp:latest localhost:5555/myapp:latest
-
-# Push to registry
-docker push localhost:5555/myapp:latest
-
-# Use in Kubernetes manifests (from inside cluster)
-# image: k3d-registry.localhost:5000/myapp:latest
-```
-
-Note: The registry is internal to the cluster and accessible via DNS name from pods. External tagging uses the cluster's mapped ports.
 
 ## Troubleshooting
 
-### Cluster creation fails
-
-If `just create` fails with errors about registry nodes or bad state:
+**Cluster creation fails:**
 
 ```bash
-# Completely reset the cluster (removes old containers, networks, volumes)
-just delete
-just create
+just delete && just create
 ```
 
-**Default ports:**
-- **HTTP**: 80 (via ingress)
-- **HTTPS**: 443 (via ingress)
-- **Registry**: Built-in to K3d cluster (no external port needed)
+**Port conflicts** (80/443 in use): edit `justfile` variables:
 
-If ports 80 or 443 are already in use, modify them in the `justfile`:
+```
+K3D_PORT_HTTP := "8080:80@loadbalancer"
+K3D_PORT_HTTPS := "8443:443@loadbalancer"
+```
+
+**ARC controller not starting:** check logs:
 
 ```bash
-K3D_PORT_HTTP := "8080:80@loadbalancer"    # Use 8080 instead of 80
-K3D_PORT_HTTPS := "8443:443@loadbalancer"  # Use 8443 instead of 443
+kubectl logs -n arc-systems -l app.kubernetes.io/name=gha-runner-scale-set-controller
 ```
 
-## Performance Considerations
-
-- **Memory**: Default K3d cluster uses ~1-2GB. Monitor Docker Desktop resources.
-- **Disk space**: Container images can use several GB. Clean up with `docker system prune`.
-- **CPU**: Typically requires 2+ CPU cores.
-
-## OpenLens
-
-[OpenLens](https://github.com/MuhammedKalkan/OpenLens) is a free Kubernetes IDE that provides a graphical interface for managing and monitoring the cluster.
-
-### Install
-
-OpenLens is installed automatically as part of `just setup`, or separately:
+**Runners not scaling:** verify the AutoScalingRunnerSet and workflow labels match:
 
 ```bash
-just install-lens
+kubectl describe autoscalingrunnersets -n arc-runners
 ```
 
-This detects your OS and installs via `winget` (Windows), `dpkg` (Linux), or `brew` (macOS).
-
-### Run
+**Remove ARC completely:**
 
 ```bash
-just lens
+just delete-arc
 ```
-
-The cluster appears automatically — kubeconfig is merged into `~/.kube/config` during `just create`.
-
-## Additional Resources
-
-- [K3d Documentation](https://k3d.io/latest/)
-- [K3s Documentation](https://docs.k3s.io/)
-- [Helm Documentation](https://helm.sh/docs/)
-- [Kubernetes Documentation](https://kubernetes.io/docs/)

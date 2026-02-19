@@ -1,0 +1,40 @@
+---
+- name: Uninstall ARC runner scale set
+  kubernetes.core.helm:
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    context: "{{ k3s_context }}"
+    name: "{{ runner_scale_set_name }}"
+    release_namespace: "{{ arc_runners_namespace }}"
+    state: absent
+    wait: true
+  ignore_errors: true
+
+- name: Uninstall ARC controller
+  kubernetes.core.helm:
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    context: "{{ k3s_context }}"
+    name: arc-controller
+    release_namespace: "{{ arc_namespace }}"
+    state: absent
+    wait: true
+  ignore_errors: true
+
+- name: Delete ARC runners namespace
+  kubernetes.core.k8s:
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    context: "{{ k3s_context }}"
+    kind: Namespace
+    name: "{{ arc_runners_namespace }}"
+    state: absent
+    wait: true
+  ignore_errors: true
+
+- name: Delete ARC system namespace
+  kubernetes.core.k8s:
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    context: "{{ k3s_context }}"
+    kind: Namespace
+    name: "{{ arc_namespace }}"
+    state: absent
+    wait: true
+  ignore_errors: true

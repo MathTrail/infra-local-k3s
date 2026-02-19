@@ -1,0 +1,11 @@
+REGISTRY := "k3d-mathtrail-registry.localhost:5050"
+IMAGE := REGISTRY + "/ci-runner"
+TAG := "latest"
+
+# Build the CI runner image
+build:
+    buildah bud -t {{ IMAGE }}:{{ TAG }} .
+
+# Build and push to k3d registry
+push: build
+    buildah push --tls-verify=false {{ IMAGE }}:{{ TAG }}

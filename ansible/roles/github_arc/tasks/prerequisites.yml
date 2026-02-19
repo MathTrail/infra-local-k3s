@@ -1,0 +1,125 @@
+---
+- name: Create ARC system namespace
+  kubernetes.core.k8s:
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    context: "{{ k3s_context }}"
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ arc_namespace }}"
+
+- name: Create ARC runners namespace
+  kubernetes.core.k8s:
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    context: "{{ k3s_context }}"
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ arc_runners_namespace }}"
+
+- name: Read GitHub App private key
+  ansible.builtin.slurp:
+    src: "{{ github_app_private_key_path }}"
+  register: _github_app_private_key
+
+- name: Create GitHub App credentials secret
+  kubernetes.core.k8s:
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    context: "{{ k3s_context }}"
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: github-app-credentials
+        namespace: "{{ arc_runners_namespace }}"
+      type: Opaque
+      stringData:
+        github_app_id: "{{ github_app_id }}"
+        github_app_installation_id: "{{ github_app_installation_id }}"
+        github_app_private_key: "{{ _github_app_private_key['content'] | b64decode }}"
+
+- name: Create BuildKit configuration ConfigMap
+  kubernetes.core.k8s:
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    context: "{{ k3s_context }}"
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: buildkitd-config
+        namespace: "{{ arc_runners_namespace }}"
+      data:
+        buildkitd.toml: |
+          {% for registry in buildkit_insecure_registries %}
+          [registry."{{ registry }}"]
+            http = true
+            insecure = true
+          {% endfor %}
+  when: buildkit_enabled
+
+- name: Create runner ServiceAccount
+  kubernetes.core.k8s:
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    context: "{{ k3s_context }}"
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: arc-runner-sa
+        namespace: "{{ arc_runners_namespace }}"
+
+- name: Create runner ClusterRole
+  kubernetes.core.k8s:
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    context: "{{ k3s_context }}"
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: arc-runner-cluster-role
+      rules:
+        - apiGroups: [""]
+          resources: ["namespaces", "pods", "services", "configmaps", "secrets", "persistentvolumeclaims", "serviceaccounts"]
+          verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+        - apiGroups: ["apps"]
+          resources: ["deployments", "statefulsets", "replicasets", "daemonsets"]
+          verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+        - apiGroups: ["batch"]
+          resources: ["jobs", "cronjobs"]
+          verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+        - apiGroups: ["policy"]
+          resources: ["poddisruptionbudgets"]
+          verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+        - apiGroups: ["networking.k8s.io"]
+          resources: ["ingresses", "networkpolicies"]
+          verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+        - apiGroups: ["rbac.authorization.k8s.io"]
+          resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+          verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+- name: Create runner ClusterRoleBinding
+  kubernetes.core.k8s:
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    context: "{{ k3s_context }}"
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: arc-runner-cluster-role-binding
+      subjects:
+        - kind: ServiceAccount
+          name: arc-runner-sa
+          namespace: "{{ arc_runners_namespace }}"
+      roleRef:
+        kind: ClusterRole
+        name: arc-runner-cluster-role
+        apiGroup: rbac.authorization.k8s.io

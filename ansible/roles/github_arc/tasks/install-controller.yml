@@ -1,0 +1,29 @@
+---
+- name: Install ARC controller via Helm
+  kubernetes.core.helm:
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    context: "{{ k3s_context }}"
+    name: arc-controller
+    chart_ref: "{{ arc_controller_chart }}"
+    chart_version: "{{ arc_controller_version }}"
+    release_namespace: "{{ arc_namespace }}"
+    create_namespace: false
+    wait: true
+    wait_timeout: "{{ arc_wait_timeout }}"
+    values: "{{ lookup('template', 'controller-values.yml.j2') | from_yaml }}"
+    state: present
+
+- name: Wait for ARC controller to be ready
+  kubernetes.core.k8s_info:
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    context: "{{ k3s_context }}"
+    kind: Deployment
+    namespace: "{{ arc_namespace }}"
+    label_selectors:
+      - app.kubernetes.io/name=gha-runner-scale-set-controller
+  register: _controller_deployment
+  until: >-
+    _controller_deployment.resources | length > 0 and
+    (_controller_deployment.resources[0].status.readyReplicas | default(0)) > 0
+  retries: 30
+  delay: 10
