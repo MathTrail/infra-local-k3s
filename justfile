@@ -59,6 +59,7 @@ create:
         --port "{{ K3D_PORT_HTTPS }}" \
         --registry-use "$REGISTRY_FULL" \
         --registry-config "{{ justfile_directory() }}/registries.yaml" \
+        --k3s-arg "--tls-san=host.docker.internal@server:0" \
         --wait \
         --timeout 120s
 
@@ -107,7 +108,9 @@ kubeconfig:
     #!/bin/bash
     set -e
     mkdir -p ~/.kube
-    k3d kubeconfig get {{ CLUSTER_NAME }} > ~/.kube/k3d-{{ CLUSTER_NAME }}.yaml
+    k3d kubeconfig get {{ CLUSTER_NAME }} \
+        | sed 's|https://0\.0\.0\.0:|https://host.docker.internal:|g' \
+        > ~/.kube/k3d-{{ CLUSTER_NAME }}.yaml
     chmod 600 ~/.kube/k3d-{{ CLUSTER_NAME }}.yaml 2>/dev/null || true
     k3d kubeconfig merge {{ CLUSTER_NAME }} --kubeconfig-merge-default
     echo "✅ Kubeconfig saved and merged into ~/.kube/config"
@@ -121,6 +124,13 @@ clean:
     DANGLING=$(docker images -q -f dangling=true)
     [ -n "$DANGLING" ] && docker rmi $DANGLING 2>/dev/null || true
     echo "✅ Cleanup complete"
+
+# ── Platform Environment ─────────────────────────────────────────────────────
+
+# Pull platform-env image and verify it's available for runner builds
+pull-platform-env:
+    docker pull ghcr.io/mathtrail/platform-env:1
+    @echo "✅ platform-env image pulled"
 
 # ── CI Runner Image ─────────────────────────────────────────────────────────
 
