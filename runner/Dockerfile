@@ -1,5 +1,8 @@
 FROM ghcr.io/actions/actions-runner:2.331.0
 
+# ── Platform environment constants ───────────────────────────────────────────
+COPY --from=ghcr.io/mathtrail/platform-env:1 /config/global.env /etc/mathtrail/platform.env
+
 # ── Install system dependencies ──────────────────────────────────────────────
 USER root
 

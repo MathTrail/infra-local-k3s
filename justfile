@@ -33,12 +33,12 @@ create:
     REGISTRY_PORT="{{ REGISTRY_PORT }}"
     REGISTRY_FULL="k3d-${REGISTRY_NAME}:${REGISTRY_PORT}"
 
-    if k3d cluster list | grep -q "$CLUSTER_NAME"; then
-        if ! kubectl cluster-info --context k3d-$CLUSTER_NAME &>/dev/null 2>&1; then
+    if k3d cluster list | grep -q "${CLUSTER_NAME}"; then
+        if ! kubectl cluster-info --context k3d-${CLUSTER_NAME} &>/dev/null 2>&1; then
             echo "⚠️  Cluster is in bad state, removing..."
             just delete
         else
-            echo "✅ Cluster '$CLUSTER_NAME' already exists and healthy"
+            echo "✅ Cluster '${CLUSTER_NAME}' already exists and healthy"
             exit 0
         fi
     fi
@@ -51,14 +51,15 @@ create:
         k3d registry create "$REGISTRY_NAME" --port "$REGISTRY_PORT"
     fi
 
-    echo "Creating k3d cluster '$CLUSTER_NAME'..."
-    k3d cluster create "$CLUSTER_NAME" \
+    echo "Creating k3d cluster '${CLUSTER_NAME}'..."
+    k3d cluster create "${CLUSTER_NAME}" \
         --servers 1 \
         --agents 2 \
         --port "{{ K3D_PORT_HTTP }}" \
         --port "{{ K3D_PORT_HTTPS }}" \
         --registry-use "$REGISTRY_FULL" \
         --registry-config "{{ justfile_directory() }}/registries.yaml" \
+        --k3s-arg "--tls-san=host.docker.internal@server:0" \
         --wait \
         --timeout 120s
 
@@ -71,8 +72,8 @@ delete:
     set -e
     CLUSTER_NAME="{{ CLUSTER_NAME }}"
     REGISTRY_NAME="{{ REGISTRY_NAME }}"
-    if k3d cluster list | grep -q "$CLUSTER_NAME"; then
-        k3d cluster delete "$CLUSTER_NAME" --all
+    if k3d cluster list | grep -q "${CLUSTER_NAME}"; then
+        k3d cluster delete "${CLUSTER_NAME}" --all
         echo "✅ Cluster deleted"
     else
         echo "⚠️  Cluster does not exist"
@@ -107,7 +108,9 @@ kubeconfig:
     #!/bin/bash
     set -e
     mkdir -p ~/.kube
-    k3d kubeconfig get {{ CLUSTER_NAME }} > ~/.kube/k3d-{{ CLUSTER_NAME }}.yaml
+    k3d kubeconfig get {{ CLUSTER_NAME }} \
+        | sed 's|https://0\.0\.0\.0:|https://host.docker.internal:|g' \
+        > ~/.kube/k3d-{{ CLUSTER_NAME }}.yaml
     chmod 600 ~/.kube/k3d-{{ CLUSTER_NAME }}.yaml 2>/dev/null || true
     k3d kubeconfig merge {{ CLUSTER_NAME }} --kubeconfig-merge-default
     echo "✅ Kubeconfig saved and merged into ~/.kube/config"
@@ -121,6 +124,13 @@ clean:
     DANGLING=$(docker images -q -f dangling=true)
     [ -n "$DANGLING" ] && docker rmi $DANGLING 2>/dev/null || true
     echo "✅ Cleanup complete"
+
+# ── Platform Environment ─────────────────────────────────────────────────────
+
+# Pull platform-env image and verify it's available for runner builds
+pull-platform-env:
+    docker pull ghcr.io/mathtrail/platform-env:1
+    @echo "✅ platform-env image pulled"
 
 # ── CI Runner Image ─────────────────────────────────────────────────────────
 
