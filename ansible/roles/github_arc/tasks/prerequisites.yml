@@ -104,6 +104,9 @@
         - apiGroups: ["rbac.authorization.k8s.io"]
           resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
           verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+        - apiGroups: ["dapr.io"]
+          resources: ["components", "configurations", "subscriptions", "resiliencies", "httpendpoints"]
+          verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 - name: Create runner ClusterRoleBinding
   kubernetes.core.k8s:
