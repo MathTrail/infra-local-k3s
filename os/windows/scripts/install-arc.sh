@@ -26,7 +26,7 @@ ARC_NAMESPACE="arc-systems"
 ARC_RUNNERS_NAMESPACE="arc-runners"
 
 GITHUB_CONFIG_URL="https://github.com/MathTrail"
-RUNNER_IMAGE_REPOSITORY="k3d-mathtrail-registry.localhost:5050/ci-runner"
+RUNNER_IMAGE_REPOSITORY="k3d-mathtrail-registry:5000/ci-runner"
 RUNNER_IMAGE_TAG="latest"
 RUNNER_SCALE_SET_NAME="mathtrail-runners"
 RUNNER_MIN_REPLICAS=1

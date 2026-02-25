@@ -102,7 +102,7 @@ runner/
 |---------|-------|
 | Controller namespace | `arc-systems` |
 | Runner namespace | `arc-runners` |
-| Runner image | `k3d-mathtrail-registry.localhost:5050/ci-runner:latest` |
+| Runner image | `k3d-mathtrail-registry:5000/ci-runner:latest` (in-cluster); push via `k3d-mathtrail-registry.localhost:5050` from host |
 | Scale set name | `mathtrail-runners` |
 | Min replicas | 1 |
 | Max replicas | 5 |

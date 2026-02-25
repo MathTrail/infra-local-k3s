@@ -16,7 +16,7 @@ github_app_private_key_path: "{{ lookup('env', 'GITHUB_APP_PRIVATE_KEY_PATH') | 
 github_config_url: "https://github.com/MathTrail"
 
 # Runner configuration
-runner_image_repository: "k3d-mathtrail-registry.localhost:5050/ci-runner"
+runner_image_repository: "k3d-mathtrail-registry:5000/ci-runner"
 runner_image_tag: "latest"
 runner_scale_set_name: "mathtrail-runners"
 runner_min_replicas: 1
