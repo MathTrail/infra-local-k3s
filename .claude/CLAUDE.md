@@ -106,7 +106,7 @@ runner/
 | Scale set name | `mathtrail-runners` |
 | Min replicas | 1 |
 | Max replicas | 5 |
-| ARC chart version | `0.10.1` |
+| ARC chart version | `0.13.1` |
 | BuildKit sidecar | `moby/buildkit:v0.27.1-rootless` on port `1234` |
 | BuildKit cache | `10Gi` |
 | GitHub org URL | `https://github.com/MathTrail` |

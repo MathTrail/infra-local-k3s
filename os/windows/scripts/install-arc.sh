@@ -39,9 +39,9 @@ BUILDKIT_CACHE_SIZE="10Gi"
 BUILDKIT_INSECURE_REGISTRIES=("k3d-mathtrail-registry:5000")
 
 ARC_CONTROLLER_CHART="oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller"
-ARC_CONTROLLER_VERSION="0.10.1"
+ARC_CONTROLLER_VERSION="0.13.1"
 ARC_RUNNER_SET_CHART="oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set"
-ARC_RUNNER_SET_VERSION="0.10.1"
+ARC_RUNNER_SET_VERSION="0.13.1"
 
 KC="kubectl --kubeconfig=$KUBECONFIG --context=$CONTEXT"
 
