@@ -16,7 +16,7 @@ github_app_private_key_path: "{{ lookup('env', 'GITHUB_APP_PRIVATE_KEY_PATH') | 
 github_config_url: "https://github.com/MathTrail"
 
 # Runner configuration
-runner_image_repository: "k3d-mathtrail-registry.localhost:5050/ci-runner"
+runner_image_repository: "k3d-mathtrail-registry:5000/ci-runner"
 runner_image_tag: "latest"
 runner_scale_set_name: "mathtrail-runners"
 runner_min_replicas: 1
@@ -32,6 +32,6 @@ buildkit_insecure_registries:
 
 # ARC Helm chart configuration
 arc_controller_chart: "oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller"
-arc_controller_version: "0.10.1"
+arc_controller_version: "0.13.1"
 arc_runner_set_chart: "oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set"
-arc_runner_set_version: "0.10.1"
+arc_runner_set_version: "0.13.1"

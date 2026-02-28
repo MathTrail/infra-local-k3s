@@ -26,7 +26,7 @@ ARC_NAMESPACE="arc-systems"
 ARC_RUNNERS_NAMESPACE="arc-runners"
 
 GITHUB_CONFIG_URL="https://github.com/MathTrail"
-RUNNER_IMAGE_REPOSITORY="k3d-mathtrail-registry.localhost:5050/ci-runner"
+RUNNER_IMAGE_REPOSITORY="k3d-mathtrail-registry:5000/ci-runner"
 RUNNER_IMAGE_TAG="latest"
 RUNNER_SCALE_SET_NAME="mathtrail-runners"
 RUNNER_MIN_REPLICAS=1
@@ -39,9 +39,9 @@ BUILDKIT_CACHE_SIZE="10Gi"
 BUILDKIT_INSECURE_REGISTRIES=("k3d-mathtrail-registry:5000")
 
 ARC_CONTROLLER_CHART="oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller"
-ARC_CONTROLLER_VERSION="0.10.1"
+ARC_CONTROLLER_VERSION="0.13.1"
 ARC_RUNNER_SET_CHART="oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set"
-ARC_RUNNER_SET_VERSION="0.10.1"
+ARC_RUNNER_SET_VERSION="0.13.1"
 
 KC="kubectl --kubeconfig=$KUBECONFIG --context=$CONTEXT"
 
@@ -104,9 +104,6 @@ rules:
     verbs: ["create", "delete", "get", "list", "watch", "patch", "update"]
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - apiGroups: ["dapr.io"]
-    resources: ["components", "configurations", "subscriptions", "resiliencies", "httpendpoints"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["external-secrets.io"]
     resources: ["externalsecrets", "clustersecretstores", "secretstores"]

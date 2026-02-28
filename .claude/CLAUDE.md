@@ -102,11 +102,11 @@ runner/
 |---------|-------|
 | Controller namespace | `arc-systems` |
 | Runner namespace | `arc-runners` |
-| Runner image | `k3d-mathtrail-registry.localhost:5050/ci-runner:latest` |
+| Runner image | `k3d-mathtrail-registry:5000/ci-runner:latest` (in-cluster); push via `k3d-mathtrail-registry.localhost:5050` from host |
 | Scale set name | `mathtrail-runners` |
 | Min replicas | 1 |
 | Max replicas | 5 |
-| ARC chart version | `0.10.1` |
+| ARC chart version | `0.13.1` |
 | BuildKit sidecar | `moby/buildkit:v0.27.1-rootless` on port `1234` |
 | BuildKit cache | `10Gi` |
 | GitHub org URL | `https://github.com/MathTrail` |
