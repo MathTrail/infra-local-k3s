@@ -106,7 +106,7 @@ rules:
     resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["external-secrets.io"]
-    resources: ["externalsecrets", "clustersecretstores", "secretstores"]
+    resources: ["externalsecrets", "clustersecretstores", "secretstores", "pushsecrets"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["autoscaling"]
     resources: ["horizontalpodautoscalers"]
