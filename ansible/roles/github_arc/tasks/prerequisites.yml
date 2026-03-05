@@ -110,6 +110,10 @@
         - apiGroups: ["autoscaling"]
           resources: ["horizontalpodautoscalers"]
           verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+        # Vault Config Operator CRDs
+        - apiGroups: ["redhatcop.redhat.io"]
+          resources: ["databasesecretengineconfigs", "databasesecretengineroles", "kubernetesauthengineroles", "policies"]
+          verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 - name: Create runner ClusterRoleBinding
   kubernetes.core.k8s:
