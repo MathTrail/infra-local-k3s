@@ -106,10 +106,14 @@ rules:
     resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["external-secrets.io"]
-    resources: ["externalsecrets", "clustersecretstores", "secretstores"]
+    resources: ["externalsecrets", "clustersecretstores", "secretstores", "pushsecrets"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["autoscaling"]
     resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Vault Config Operator CRDs
+  - apiGroups: ["redhatcop.redhat.io"]
+    resources: ["databasesecretengineconfigs", "databasesecretengineroles", "kubernetesauthengineroles", "policies"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

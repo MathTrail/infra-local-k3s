@@ -22,7 +22,7 @@ RUN curl -LO "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kube
     && rm kubectl
 
 # ── Go ──────────────────────────────────────────────────────────────────
-ARG GO_VERSION=1.25.7
+ARG GO_VERSION=1.26.0
 RUN curl -LO "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" \
     && tar -C /usr/local -xzf "go${GO_VERSION}.linux-amd64.tar.gz" \
     && rm "go${GO_VERSION}.linux-amd64.tar.gz"

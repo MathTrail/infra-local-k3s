@@ -2,3 +2,6 @@ mirrors:
   "k3d-mathtrail-registry.localhost:5050":
     endpoint:
       - http://k3d-mathtrail-registry:5000
+  "k3d-mathtrail-registry:5000":
+    endpoint:
+      - http://k3d-mathtrail-registry:5000
