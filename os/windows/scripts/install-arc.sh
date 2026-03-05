@@ -115,6 +115,10 @@ rules:
   - apiGroups: ["redhatcop.redhat.io"]
     resources: ["databasesecretengineconfigs", "databasesecretengineroles", "kubernetesauthengineroles", "policies"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Vault Secrets Operator CRDs
+  - apiGroups: ["secrets.hashicorp.com"]
+    resources: ["vaultauths", "vaultdynamicsecrets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
