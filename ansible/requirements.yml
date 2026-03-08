@@ -2,3 +2,9 @@
 collections:
   - name: kubernetes.core
     version: ">=3.0.0"
+  - name: community.general
+    version: ">=9.0.0"
+  - name: mathtrail.infra
+    source: https://github.com/MathTrail/infra.git
+    type: git
+    version: main

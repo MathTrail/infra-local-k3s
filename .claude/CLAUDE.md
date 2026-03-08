@@ -14,7 +14,8 @@ This repo must be set up **first** — all other MathTrail repos depend on the c
 |-------|-----------|
 | Cluster | [K3d](https://k3d.io) (K3s inside Docker) |
 | Task runner | [Just](https://just.systems) |
-| Container runtime | Docker Desktop / Docker Engine |
+| Container runtime | Docker Engine |
+| Tool installation | Ansible (Linux only) |
 | CI runner management | Ansible + [ARC](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners-with-actions-runner-controller) |
 | Container builds | Buildah (host) + BuildKit sidecar (in-cluster) |
 
@@ -40,12 +41,11 @@ This repo must be set up **first** — all other MathTrail repos depend on the c
 
 ```bash
 # Full setup from scratch
-just setup              # install tools + create cluster + install OpenLens
+just setup              # install tools + create cluster
 
 # Step by step
-just install            # install k3d, Node.js, Buildah, Ansible + Galaxy collections
+just install            # install k3d, Node.js, Buildah, OpenLens (+ Helm, kubectl from mathtrail.infra) via Ansible
 just create             # create k3d cluster + registry (idempotent)
-just kubeconfig         # save and merge kubeconfig into ~/.kube/config
 just status             # verify cluster health
 just delete             # delete cluster and registry
 
@@ -68,30 +68,46 @@ just arc-status         # show controller pods, runner pods, AutoScalingRunnerSe
 ## File Structure
 
 ```
-justfile                # main task runner (imports OS-specific recipes)
+justfile                # main task runner
 registries.yaml         # K3d registry mirror config
 .env                    # GitHub App credentials (gitignored)
 .env.example            # template for .env
 .github-app-private-key.pem  # GitHub App private key (gitignored)
 
-ansible/
-  ansible.cfg
-  requirements.yml                     # kubernetes.core collection
-  group_vars/all.yml                   # ARC/runner Helm + k8s configuration
-  inventory/local.yml
-  playbooks/
-    install-arc.yml
-    uninstall-arc.yml
-  roles/github_arc/                    # ARC controller + runner scale set role
+roles/                  # Ansible collection roles (namespace: mathtrail, name: k3s)
+  buildah/              # install buildah via apt
+  github_arc/           # ARC controller + runner scale set
+  k3d/                  # install k3d binary
+  k3d_cluster/          # create/manage k3d cluster
+  node/                 # install Node.js via Nodesource
+  openlens/             # install OpenLens + pod menu extension
 
-os/                                    # OS-specific just recipes
-  linux.just / macos.just / windows.just
-  linux/ macos/ windows/
-    ansible.just  buildah.just  k3d.just  node.just  openlens.just
+playbooks/
+  install.yml           # install all tools (k3d, node, buildah, openlens + mathtrail.infra.kubectl/helm)
+  create-cluster.yml    # create k3d cluster + registry
+  install-arc.yml       # deploy ARC
+  uninstall-arc.yml     # remove ARC
+
+ansible/
+  ansible.cfg           # roles_path = ../roles
+  requirements.yml      # kubernetes.core + community.general collections
+  group_vars/all.yml    # all variables (tool versions, cluster config, ARC/runner config)
+  inventory/local.yml
 
 runner/
   Dockerfile            # custom CI runner image (actions-runner base)
   justfile              # build/push helpers
+```
+
+---
+
+## Ansible Collection
+
+The repo is a Galaxy collection (`mathtrail.k3s`). Roles are accessible as `mathtrail.k3s.<role>` when installed via `core/ansible/requirements.yml`.
+
+Install Galaxy collections before running playbooks:
+```bash
+ansible-galaxy collection install -r ansible/requirements.yml --force
 ```
 
 ---

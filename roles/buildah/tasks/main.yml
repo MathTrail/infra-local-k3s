@@ -1,0 +1,7 @@
+---
+- name: Install buildah
+  ansible.builtin.apt:
+    name: buildah
+    state: "{{ buildah_state }}"
+    update_cache: true
+  become: true

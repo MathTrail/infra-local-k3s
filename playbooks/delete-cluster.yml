@@ -1,0 +1,8 @@
+---
+- name: Delete k3d development cluster
+  hosts: localhost
+  gather_facts: true
+
+  roles:
+    - role: k3d_cluster
+      k3d_cluster_state: absent

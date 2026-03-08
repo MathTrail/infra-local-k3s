@@ -1,4 +1,0 @@
----
-- name: Hello from infra-local-k3s
-  ansible.builtin.debug:
-    msg: "Hello World from infra-local-k3s!"

@@ -1,0 +1,14 @@
+---
+- name: Check if k3d is installed
+  ansible.builtin.command: k3d version --short
+  register: _k3d_check
+  changed_when: false
+  failed_when: false
+
+- name: Install k3d binary
+  ansible.builtin.get_url:
+    url: "https://github.com/k3d-io/k3d/releases/download/{{ k3d_version }}/k3d-linux-amd64"
+    dest: "{{ k3d_install_dir }}/k3d"
+    mode: "0755"
+  become: true
+  when: _k3d_check.rc != 0 or k3d_version not in (_k3d_check.stdout | default(''))

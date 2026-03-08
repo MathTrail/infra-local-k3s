@@ -1,0 +1,67 @@
+---
+- name: Check if OpenLens is installed
+  ansible.builtin.command: which open-lens
+  register: _openlens_check
+  changed_when: false
+  failed_when: false
+
+- name: Install OpenLens
+  when: _openlens_check.rc != 0
+  block:
+    - name: Get system architecture
+      ansible.builtin.command: dpkg --print-architecture
+      register: _system_arch
+      changed_when: false
+
+    - name: Get latest OpenLens release info
+      ansible.builtin.uri:
+        url: https://api.github.com/repos/MuhammedKalkan/OpenLens/releases/latest
+        return_content: true
+      register: _openlens_release
+
+    - name: Set OpenLens deb URL
+      ansible.builtin.set_fact:
+        _openlens_deb_url: "{{ _openlens_release.json.assets | selectattr('name', 'match', '.*' + _system_arch.stdout + '\\.deb') | map(attribute='browser_download_url') | first }}"
+
+    - name: Download OpenLens .deb
+      ansible.builtin.get_url:
+        url: "{{ _openlens_deb_url }}"
+        dest: /tmp/openlens.deb
+        mode: "0644"
+
+    - name: Install OpenLens .deb
+      ansible.builtin.apt:
+        deb: /tmp/openlens.deb
+      become: true
+
+    - name: Remove downloaded .deb
+      ansible.builtin.file:
+        path: /tmp/openlens.deb
+        state: absent
+
+- name: Check if pod menu extension is installed
+  ansible.builtin.stat:
+    path: "{{ openlens_extensions_dir }}/openlens-node-pod-menu/package.json"
+  register: _pod_menu_check
+  when: openlens_install_pod_menu_extension
+
+- name: Install pod menu extension
+  when: openlens_install_pod_menu_extension and not _pod_menu_check.stat.exists
+  block:
+    - name: Create extensions directory
+      ansible.builtin.file:
+        path: "{{ openlens_extensions_dir }}/openlens-node-pod-menu"
+        state: directory
+        mode: "0755"
+
+    - name: Install @alebcay/openlens-node-pod-menu via npm
+      community.general.npm:
+        name: "@alebcay/openlens-node-pod-menu"
+        path: /tmp/openlens-ext-install
+        state: present
+
+    - name: Copy extension to OpenLens extensions directory
+      ansible.builtin.copy:
+        src: /tmp/openlens-ext-install/node_modules/@alebcay/openlens-node-pod-menu/
+        dest: "{{ openlens_extensions_dir }}/openlens-node-pod-menu/"
+        remote_src: true
