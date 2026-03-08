@@ -1,7 +1,14 @@
 ---
+- name: Check if buildah is installed
+  ansible.builtin.command: buildah --version
+  register: _buildah_check
+  changed_when: false
+  failed_when: false
+
 - name: Install buildah
   ansible.builtin.apt:
     name: buildah
     state: "{{ buildah_state }}"
     update_cache: true
   become: true
+  when: _buildah_check.rc != 0
