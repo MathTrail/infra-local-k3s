@@ -92,8 +92,9 @@ ansible.cfg               # roles_path = roles (root-level, used when running fr
 ansible/
   ansible.cfg           # roles_path = ../roles (used when running from ansible/ dir)
   requirements.yml      # kubernetes.core + community.general collections
-  group_vars/all.yml    # all variables (tool versions, cluster config, ARC/runner config)
-  inventory/local.yml
+  inventory/
+    local.yml
+    group_vars/all.yml  # all variables (tool versions, cluster config, ARC/runner config)
 
 runner/
   Dockerfile            # custom CI runner image (actions-runner base)
