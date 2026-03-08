@@ -11,6 +11,7 @@ setup: install create
 
 # Install prerequisites via Ansible (k3d, Node.js, Buildah, OpenLens + Helm, kubectl from mathtrail.infra)
 install:
+    ansible-galaxy collection install -r ansible/requirements.yml --force
     ansible-playbook -i ansible/inventory/local.yml playbooks/install.yml --ask-become-pass
 
 # Create k3d cluster + registry (idempotent)
