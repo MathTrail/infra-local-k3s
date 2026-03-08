@@ -188,7 +188,7 @@ k3d_port_https: "8443:443@loadbalancer"
 **ARC controller not starting:** check logs:
 
 ```bash
-kubectl logs -n arc-systems -l app.kubernetes.io/name=gha-runner-scale-set-controller
+kubectl logs -n arc-systems -l app.kubernetes.io/name=gha-rs-controller
 ```
 
 **Runners not scaling:** verify the AutoScalingRunnerSet and workflow labels match:

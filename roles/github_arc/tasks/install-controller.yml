@@ -20,7 +20,7 @@
     kind: Deployment
     namespace: "{{ arc_namespace }}"
     label_selectors:
-      - app.kubernetes.io/name=gha-runner-scale-set-controller
+      - app.kubernetes.io/name=gha-rs-controller
   register: _controller_deployment
   until: >-
     _controller_deployment.resources | length > 0 and
