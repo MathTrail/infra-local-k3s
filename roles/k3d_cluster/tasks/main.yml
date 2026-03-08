@@ -25,7 +25,6 @@
         --port {{ k3d_port_https }}
         --registry-use k3d-{{ k3d_registry_name }}:{{ k3d_registry_port }}
         --registry-config {{ k3d_registries_config }}
-        --k3s-arg --tls-san=host.docker.internal@server:0
         --wait
         --timeout 120s
 
@@ -33,9 +32,7 @@
   ansible.builtin.shell: |
     set -e
     mkdir -p "$(dirname "{{ k3d_kubeconfig_path }}")"
-    k3d kubeconfig get {{ k3d_cluster_name }} \
-      | sed 's|https://0\.0\.0\.0:|https://host.docker.internal:|g' \
-      > "{{ k3d_kubeconfig_path }}"
+    k3d kubeconfig get {{ k3d_cluster_name }} > "{{ k3d_kubeconfig_path }}"
     chmod 600 "{{ k3d_kubeconfig_path }}"
     k3d kubeconfig merge {{ k3d_cluster_name }} --kubeconfig-merge-default
   when: k3d_cluster_state == 'present'
