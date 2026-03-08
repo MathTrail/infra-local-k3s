@@ -1,4 +1,15 @@
 ---
+# Tool installation
+node_major_version: "22"
+k3d_version: "v5.8.3"
+kubectl_version: ""
+helm_version: "latest"
+
+# k3d cluster
+k3d_cluster_name: mathtrail-dev
+k3d_registry_name: mathtrail-registry
+k3d_registry_port: "5050"
+
 # Kubernetes configuration
 k3s_kubeconfig: "{{ lookup('env', 'HOME') }}/.kube/k3d-mathtrail-dev.yaml"
 k3s_context: "k3d-mathtrail-dev"

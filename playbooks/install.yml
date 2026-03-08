@@ -1,0 +1,12 @@
+---
+- name: Install local K3s development tools
+  hosts: localhost
+  gather_facts: true
+
+  roles:
+    - mathtrail.infra.kubectl
+    - mathtrail.infra.helm
+    - k3d
+    - node
+    - buildah
+    - openlens

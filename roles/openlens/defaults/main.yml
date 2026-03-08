@@ -1,0 +1,3 @@
+---
+openlens_install_pod_menu_extension: true
+openlens_extensions_dir: "{{ ansible_env.HOME }}/.k8slens/extensions"
