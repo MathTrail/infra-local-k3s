@@ -88,8 +88,9 @@ playbooks/
   install-arc.yml       # deploy ARC
   uninstall-arc.yml     # remove ARC
 
+ansible.cfg               # roles_path = roles (root-level, used when running from repo root)
 ansible/
-  ansible.cfg           # roles_path = ../roles
+  ansible.cfg           # roles_path = ../roles (used when running from ansible/ dir)
   requirements.yml      # kubernetes.core + community.general collections
   group_vars/all.yml    # all variables (tool versions, cluster config, ARC/runner config)
   inventory/local.yml
