@@ -3,7 +3,6 @@
 set shell := ["bash", "-c"]
 
 CLUSTER_NAME := "mathtrail-dev"
-REGISTRY_NAME := "mathtrail-registry"
 ARC_NAMESPACE := "arc-systems"
 ARC_RUNNERS_NAMESPACE := "arc-runners"
 
