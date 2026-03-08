@@ -5,15 +5,14 @@ Local Kubernetes cluster setup using K3d for MathTrail development.
 ## Quick Start
 
 ```bash
-just setup        # install tools + create cluster + install OpenLens
+just setup        # install tools + create cluster
 ```
 
 Or step by step:
 
 ```bash
-just install      # install prerequisites (k3d, Node.js, Buildah)
+just install      # install k3d, Node.js, Buildah, OpenLens (+ Helm, kubectl) via Ansible
 just create       # create k3d cluster with registry
-just kubeconfig   # save kubeconfig to ~/.kube/
 just status       # verify cluster health
 ```
 
@@ -24,21 +23,20 @@ just status       # verify cluster health
 - **1 server** node (control plane) + **2 agent** nodes (workers)
 - Container registry at `k3d-mathtrail-registry.localhost:5050`
 - Port forwarding: HTTP (80), HTTPS (443)
-- Kubeconfig at `~/.kube/k3d-mathtrail-dev.yaml`
+- Kubeconfig merged into `~/.kube/config`
 
 ## Cluster Commands
 
 | Command | Description |
 |---------|-------------|
+| `just setup` | Full setup: install tools + create cluster |
+| `just install` | Install prerequisites via Ansible |
 | `just create` | Create cluster + registry (idempotent) |
 | `just delete` | Delete cluster and registry |
 | `just start` | Start a stopped cluster |
 | `just stop` | Stop running cluster |
 | `just status` | Show cluster info |
-| `just kubeconfig` | Regenerate and merge kubeconfig |
 | `just clean` | Remove stopped containers and dangling images |
-| `just install-lens` | Install OpenLens Kubernetes IDE |
-| `just lens` | Launch OpenLens |
 
 ## Container Registry
 
@@ -81,21 +79,15 @@ ARC provides auto-scaling ephemeral runners authenticated via a GitHub App.
 
 ### Prerequisites
 
-1. Ansible and required Galaxy collections are installed automatically as part of `just install`. If you skipped the full install, run it now:
-
-   ```bash
-   just install
-   ```
-
-2. Create a GitHub App at `https://github.com/organizations/MathTrail/settings/apps/new` with permissions:
+1. Create a GitHub App at `https://github.com/organizations/MathTrail/settings/apps/new` with permissions:
    - Repository: **Actions** (R/W), **Administration** (R/W), **Metadata** (Read)
    - Organization: **Self-hosted runners** (R/W)
 
-3. Install the app to the MathTrail organization and note the **Installation ID** from the URL.
+2. Install the app to the MathTrail organization and note the **Installation ID** from the URL.
 
-4. Generate a private key (`.pem` file) from the app settings and save it as `.github-app-private-key.pem` in the project root.
+3. Generate a private key (`.pem` file) from the app settings and save it as `.github-app-private-key.pem` in the project root.
 
-5. Configure credentials:
+4. Configure credentials:
 
    ```bash
    cp .env.example .env
@@ -105,8 +97,8 @@ ARC provides auto-scaling ephemeral runners authenticated via a GitHub App.
 ### Deploy
 
 ```bash
-just install        # installs all prerequisites including Ansible (if not done already)
-just build-runner   # build custom runner image (if not done already)
+just setup          # install tools + create cluster (if not done already)
+just build-runner   # build custom runner image
 just install-arc    # deploy ARC controller + runner scale set
 ```
 
@@ -137,17 +129,6 @@ runs-on: mathtrail-runners
 
 All MathTrail repos use DevContainers that connect to this cluster via mounted kubeconfig.
 
-### Host Setup
-
-Ensure the cluster is running and kubeconfig is generated:
-
-```bash
-just create
-just kubeconfig
-```
-
-### DevContainer Configuration
-
 Mount the kubeconfig in `devcontainer.json`:
 
 ```jsonc
@@ -172,7 +153,7 @@ helm list -A
 
 ```
 Host Machine
-├── Docker Desktop / Docker Engine
+├── Docker Engine
 │   └── K3d Cluster (mathtrail-dev)
 │       ├── Server Node (control plane)
 │       ├── Agent Node 1
@@ -197,11 +178,11 @@ Host Machine
 just delete && just create
 ```
 
-**Port conflicts** (80/443 in use): edit `justfile` variables:
+**Port conflicts** (80/443 in use): edit port settings in `ansible/group_vars/all.yml`:
 
-```
-K3D_PORT_HTTP := "8080:80@loadbalancer"
-K3D_PORT_HTTPS := "8443:443@loadbalancer"
+```yaml
+k3d_port_http: "8080:80@loadbalancer"
+k3d_port_https: "8443:443@loadbalancer"
 ```
 
 **ARC controller not starting:** check logs:
