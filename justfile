@@ -68,6 +68,7 @@ install-arc:
         exit 1
     fi
     set -a; source .env; set +a
+    export GITHUB_APP_PRIVATE_KEY_PATH=$(realpath "$GITHUB_APP_PRIVATE_KEY_PATH")
     ansible-playbook -i ansible/inventory/local.yml playbooks/install-arc.yml
 
 # Remove ARC from cluster
