@@ -3,6 +3,13 @@
   hosts: localhost
   gather_facts: true
 
+  pre_tasks:
+    - name: Install kubernetes Python library for Ansible
+      ansible.builtin.command:
+        cmd: "{{ ansible_playbook_python }} -m pip install kubernetes"
+      register: _pip_result
+      changed_when: "'Successfully installed' in _pip_result.stdout"
+
   roles:
     - mathtrail.infra.kubectl
     - mathtrail.infra.helm
