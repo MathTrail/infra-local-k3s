@@ -40,4 +40,3 @@ ansible/playbooks/*.retry
 tmp/
 temp/
 *.tmp
-env
