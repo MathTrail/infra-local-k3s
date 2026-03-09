@@ -14,7 +14,7 @@
     - name: Create custom resolv.conf for k3d nodes
       ansible.builtin.copy:
         dest: "{{ k3d_resolv_conf }}"
-        content: "nameserver 8.8.8.8\nnameserver 1.1.1.1\n"
+        content: "{{ k3d_dns_servers | map('regex_replace', '^', 'nameserver ') | join('\n') }}\n"
         mode: "0644"
       become: true
 
@@ -54,3 +54,10 @@
   when: k3d_cluster_state == 'absent'
   register: _registry_delete
   failed_when: _registry_delete.rc != 0 and 'No nodes found' not in _registry_delete.stderr
+
+- name: Remove custom resolv.conf
+  ansible.builtin.file:
+    path: "{{ k3d_resolv_conf }}"
+    state: absent
+  become: true
+  when: k3d_cluster_state == 'absent'
