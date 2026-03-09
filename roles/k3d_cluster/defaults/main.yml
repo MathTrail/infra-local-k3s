@@ -12,8 +12,11 @@ k3d_cluster_state: present
 # On Ubuntu 24.04 the default /etc/resolv.conf points to 127.0.0.53 (systemd-resolved stub),
 # which is unreachable from inside Docker containers — containerd fails to pull external images.
 k3d_resolv_conf: /etc/k3d-resolv.conf
-# DNS servers written into k3d_resolv_conf. Override in group_vars for corporate environments
-# that require an internal DNS server (e.g. for private registries or split-horizon DNS).
+# DNS servers written into k3d_resolv_conf.
+# On Ubuntu 24.04 the default resolv.conf uses 127.0.0.53 (systemd-resolved stub)
+# which is unreachable from inside Docker containers.
+# k3d-mathtrail-registry resolves via /etc/hosts (added by --registry-use), not DNS.
+# Override in group_vars for corporate environments with internal DNS.
 k3d_dns_servers:
   - 8.8.8.8
   - 1.1.1.1
