@@ -45,6 +45,32 @@
     k3d kubeconfig merge {{ k3d_cluster_name }} --kubeconfig-merge-default
   when: k3d_cluster_state == 'present'
 
+- name: Get registry IP in cluster network
+  ansible.builtin.command: >
+    docker inspect k3d-{{ k3d_registry_name }}
+    --format "{{ '{{' }}(index .NetworkSettings.Networks \"k3d-{{ k3d_cluster_name }}\").IPAddress{{ '}}' }}"
+  register: _registry_ip
+  changed_when: false
+  when: k3d_cluster_state == 'present'
+
+- name: Patch CoreDNS NodeHosts to resolve k3d registry from pods
+  ansible.builtin.shell: |
+    set -e
+    KUBECONFIG={{ k3d_kubeconfig_path }}
+    REGISTRY_IP={{ _registry_ip.stdout }}
+    REGISTRY_NAME=k3d-{{ k3d_registry_name }}
+    # Get current NodeHosts, strip any existing registry entry, append fresh one
+    CURRENT=$(kubectl get configmap coredns -n kube-system \
+      -o jsonpath='{.data.NodeHosts}' | grep -v "${REGISTRY_NAME}")
+    NEW_HOSTS="${CURRENT}${REGISTRY_IP} ${REGISTRY_NAME}"
+    kubectl patch configmap coredns -n kube-system --type=merge \
+      -p "{\"data\":{\"NodeHosts\":\"${NEW_HOSTS}\n\"}}"
+    kubectl rollout restart deployment/coredns -n kube-system
+  environment:
+    KUBECONFIG: "{{ k3d_kubeconfig_path }}"
+  changed_when: true
+  when: k3d_cluster_state == 'present'
+
 - name: Delete cluster
   ansible.builtin.command: k3d cluster delete {{ k3d_cluster_name }} --all
   when: k3d_cluster_state == 'absent' and _k3d_cluster_exists
