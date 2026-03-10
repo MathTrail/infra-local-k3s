@@ -55,10 +55,11 @@
     # Get current NodeHosts, strip any existing registry entry, append fresh one
     CURRENT=$(kubectl get configmap coredns -n kube-system \
       -o jsonpath='{.data.NodeHosts}' | grep -v "${REGISTRY_NAME}")
-    NEW_HOSTS="${CURRENT}${REGISTRY_IP} ${REGISTRY_NAME}"
-    kubectl patch configmap coredns -n kube-system --type=merge \
-      -p "{\"data\":{\"NodeHosts\":\"${NEW_HOSTS}\n\"}}"
+    NEW_HOSTS="$(printf '%s\n%s %s\n' "${CURRENT}" "${REGISTRY_IP}" "${REGISTRY_NAME}")"
+    PAYLOAD=$(printf '%s' "${NEW_HOSTS}" | python3 -c "import json,sys; print(json.dumps({'data':{'NodeHosts':sys.stdin.read()}}))")
+    kubectl patch configmap coredns -n kube-system --type=merge -p "${PAYLOAD}"
     kubectl rollout restart deployment/coredns -n kube-system
+    kubectl rollout status deployment/coredns -n kube-system --timeout=60s
   environment:
     KUBECONFIG: "{{ k3d_kubeconfig_path }}"
   changed_when: true
