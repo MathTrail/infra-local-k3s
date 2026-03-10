@@ -11,7 +11,8 @@ k3d_cluster_state: present
 # Path to custom resolv.conf mounted into k3d nodes.
 # On Ubuntu 24.04 the default /etc/resolv.conf points to 127.0.0.53 (systemd-resolved stub),
 # which is unreachable from inside Docker containers — containerd fails to pull external images.
-k3d_resolv_conf: /etc/k3d-resolv.conf
+# Stored in ~/.config/k3d/ so no sudo is required.
+k3d_resolv_conf: "{{ ansible_facts['env']['HOME'] }}/.config/k3d/resolv.conf"
 # DNS servers written into k3d_resolv_conf.
 # On Ubuntu 24.04 the default resolv.conf uses 127.0.0.53 (systemd-resolved stub)
 # which is unreachable from inside Docker containers.

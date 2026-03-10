@@ -31,6 +31,19 @@ start:
         exit 1
     fi
     k3d cluster start {{ CLUSTER_NAME }}
+    # Wait for CoreDNS to be ready, then patch forward to bypass systemd-resolved stub (127.0.0.53)
+    echo "Waiting for CoreDNS..."
+    kubectl rollout status deployment/coredns -n kube-system --timeout=60s
+    CURRENT=$(kubectl get cm coredns -n kube-system -o jsonpath='{.data.Corefile}')
+    if echo "$CURRENT" | grep -q "forward . /etc/resolv.conf"; then
+        echo "Patching CoreDNS DNS forward to 8.8.8.8 1.1.1.1..."
+        kubectl get cm coredns -n kube-system -o json \
+            | sed "s|forward . /etc/resolv.conf|forward . 8.8.8.8 1.1.1.1|" \
+            | kubectl apply -f -
+        kubectl rollout restart deployment/coredns -n kube-system
+        kubectl rollout status deployment/coredns -n kube-system --timeout=60s
+        echo "CoreDNS patched."
+    fi
 
 # Stop a running cluster
 stop:
