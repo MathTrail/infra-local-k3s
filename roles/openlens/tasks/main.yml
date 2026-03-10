@@ -41,7 +41,7 @@
 
 - name: Check if pod menu extension is installed
   ansible.builtin.stat:
-    path: "{{ openlens_extensions_dir }}/openlens-node-pod-menu/package.json"
+    path: "{{ openlens_extensions_dir }}/@alebcay/openlens-node-pod-menu/package.json"
   register: _pod_menu_check
   when: openlens_install_pod_menu_extension
 
@@ -50,7 +50,7 @@
   block:
     - name: Create extensions directory
       ansible.builtin.file:
-        path: "{{ openlens_extensions_dir }}/openlens-node-pod-menu"
+        path: "{{ openlens_extensions_dir }}/@alebcay/openlens-node-pod-menu"
         state: directory
         mode: "0755"
 
@@ -63,5 +63,5 @@
     - name: Copy extension to OpenLens extensions directory
       ansible.builtin.copy:
         src: /tmp/openlens-ext-install/node_modules/@alebcay/openlens-node-pod-menu/
-        dest: "{{ openlens_extensions_dir }}/openlens-node-pod-menu/"
+        dest: "{{ openlens_extensions_dir }}/@alebcay/openlens-node-pod-menu/"
         remote_src: true
