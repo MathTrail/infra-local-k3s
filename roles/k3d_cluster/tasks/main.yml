@@ -11,18 +11,6 @@
 - name: Create cluster
   when: k3d_cluster_state == 'present' and not _k3d_cluster_exists
   block:
-    - name: Create directory for custom resolv.conf
-      ansible.builtin.file:
-        path: "{{ k3d_resolv_conf | dirname }}"
-        state: directory
-        mode: "0755"
-
-    - name: Create custom resolv.conf for k3d nodes
-      ansible.builtin.copy:
-        dest: "{{ k3d_resolv_conf }}"
-        content: "{{ k3d_dns_servers | map('regex_replace', '^', 'nameserver ') | join('\n') }}\n"
-        mode: "0644" 
-
     - name: Create registry (idempotent)
       ansible.builtin.command: k3d registry create {{ k3d_registry_name }} --port {{ k3d_registry_port }}
       register: _registry_create
@@ -37,7 +25,6 @@
         --port {{ k3d_port_https }}
         --registry-use k3d-{{ k3d_registry_name }}:{{ k3d_registry_port }}
         --registry-config {{ k3d_registries_config }}
-        --volume {{ k3d_resolv_conf }}:/etc/resolv.conf@all
         --k3s-arg "--disable=traefik@server:*"
         --wait
         --timeout 120s
@@ -108,8 +95,3 @@
   register: _registry_delete
   failed_when: _registry_delete.rc != 0 and 'No nodes found' not in _registry_delete.stderr and "Didn't find container" not in _registry_delete.stderr
 
-- name: Remove custom resolv.conf
-  ansible.builtin.file:
-    path: "{{ k3d_resolv_conf }}"
-    state: absent
-  when: k3d_cluster_state == 'absent'
