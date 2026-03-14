@@ -17,3 +17,26 @@
     - node
     - buildah
     - openlens
+
+  post_tasks:
+    - name: Read current Docker daemon config
+      become: true
+      ansible.builtin.slurp:
+        src: /etc/docker/daemon.json
+      register: _docker_daemon_raw
+      ignore_errors: true
+
+    - name: Configure Docker daemon DNS (bypass systemd-resolved stub unreachable from Docker bridge)
+      become: true
+      ansible.builtin.copy:
+        dest: /etc/docker/daemon.json
+        content: "{{ (_docker_daemon_raw.content | default('e30=') | b64decode | from_json) | combine({'dns': ['8.8.8.8', '1.1.1.1']}) | to_nice_json }}\n"
+        mode: "0644"
+      register: _docker_daemon_changed
+
+    - name: Restart Docker to apply DNS config
+      become: true
+      ansible.builtin.systemd:
+        name: docker
+        state: restarted
+      when: _docker_daemon_changed.changed
