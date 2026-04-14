@@ -34,6 +34,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         buildah fuse-overlayfs slirp4netns uidmap \
     && rm -rf /var/lib/apt/lists/*
 
+# Allow runner user to map the full UID/GID range for rootless buildah
+RUN echo "runner:100000:65536" >> /etc/subuid \
+    && echo "runner:100000:65536" >> /etc/subgid
+
 # Configure Buildah for rootless operation
 RUN mkdir -p /etc/containers && \
     echo '[storage]'                          >  /etc/containers/storage.conf && \
@@ -71,6 +75,13 @@ RUN curl -fsSL "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-${ESBU
 ARG GOLANGCI_LINT_VERSION=2.9.0
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/refs/tags/v${GOLANGCI_LINT_VERSION}/install.sh \
     | sh -s -- -b /usr/local/bin v${GOLANGCI_LINT_VERSION}
+
+# ── buf (Protobuf toolchain) ──────────────────────────────────────────────────
+ARG BUF_VERSION=1.66.1
+RUN curl -sSfL \
+    "https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/buf-$(uname -s)-$(uname -m)" \
+    -o /usr/local/bin/buf \
+    && chmod +x /usr/local/bin/buf
 
 # ── Back to runner user ──────────────────────────────────────────────────────
 USER runner

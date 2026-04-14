@@ -20,6 +20,9 @@ template:
       - name: runner
         image: "{{ runner_image_repository }}:{{ runner_image_tag }}"
         imagePullPolicy: Always
+        securityContext:
+          seccompProfile:
+            type: Unconfined
         env:
           - name: BUILDKIT_HOST
             value: "tcp://localhost:{{ buildkit_port }}"
