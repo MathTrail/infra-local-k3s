@@ -66,6 +66,17 @@
   changed_when: true
   when: k3d_cluster_state == 'present'
 
+- name: Apply CoreDNS custom domain rewrites (mathtrail.localhost → Traefik)
+  ansible.builtin.shell: |
+    set -e
+    kubectl apply -f {{ role_path }}/files/coredns-custom.yaml
+    kubectl rollout restart deployment/coredns -n kube-system
+    kubectl rollout status deployment/coredns -n kube-system --timeout=60s
+  environment:
+    KUBECONFIG: "{{ k3d_kubeconfig_path }}"
+  changed_when: true
+  when: k3d_cluster_state == 'present'
+
 - name: Delete cluster
   ansible.builtin.command: k3d cluster delete {{ k3d_cluster_name }} --all
   when: k3d_cluster_state == 'absent' and _k3d_cluster_exists

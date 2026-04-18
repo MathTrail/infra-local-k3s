@@ -7,5 +7,5 @@
     k3d_registries_config: "{{ playbook_dir }}/../registries.yaml"
 
   roles:
-    - role: k3d_cluster
+    - role: cluster
       k3d_cluster_state: present

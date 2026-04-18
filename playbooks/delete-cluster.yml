@@ -4,5 +4,5 @@
   gather_facts: true
 
   roles:
-    - role: k3d_cluster
+    - role: cluster
       k3d_cluster_state: absent
