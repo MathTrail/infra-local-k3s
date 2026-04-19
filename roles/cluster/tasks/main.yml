@@ -27,6 +27,7 @@
         --registry-config {{ k3d_registries_config }}
         --k3s-arg "--disable=traefik@server:*"
         --k3s-arg "--tls-san=host.docker.internal@server:*"
+        --k3s-arg "--node-taint=node-role.kubernetes.io/control-plane:NoSchedule@server:*"
         --volume {{ role_path }}/files/coredns-custom.yaml:/var/lib/rancher/k3s/server/manifests/coredns-custom.yaml@server:*
         --wait
         --timeout 120s
