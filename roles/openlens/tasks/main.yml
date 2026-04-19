@@ -39,29 +39,80 @@
         path: /tmp/openlens.deb
         state: absent
 
+- name: Ensure OpenLens directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ openlens_extensions_dir }}"
+    - "{{ openlens_config_dir }}/node_modules/@alebcay"
+    - "{{ openlens_config_dir }}/node_modules/@andrea-falco"
+
 - name: Check if pod menu extension is installed
   ansible.builtin.stat:
-    path: "{{ openlens_extensions_dir }}/@alebcay/openlens-node-pod-menu/package.json"
+    path: "{{ openlens_extensions_dir }}/alebcay--openlens-node-pod-menu/package.json"
   register: _pod_menu_check
   when: openlens_install_pod_menu_extension
 
 - name: Install pod menu extension
   when: openlens_install_pod_menu_extension and not _pod_menu_check.stat.exists
   block:
-    - name: Create extensions directory
-      ansible.builtin.file:
-        path: "{{ openlens_extensions_dir }}/@alebcay/openlens-node-pod-menu"
-        state: directory
-        mode: "0755"
-
     - name: Install @alebcay/openlens-node-pod-menu via npm
       community.general.npm:
         name: "@alebcay/openlens-node-pod-menu"
         path: /tmp/openlens-ext-install
         state: present
 
-    - name: Copy extension to OpenLens extensions directory
+    - name: Copy pod menu extension to extensions directory
       ansible.builtin.copy:
         src: /tmp/openlens-ext-install/node_modules/@alebcay/openlens-node-pod-menu/
-        dest: "{{ openlens_extensions_dir }}/@alebcay/openlens-node-pod-menu/"
+        dest: "{{ openlens_extensions_dir }}/alebcay--openlens-node-pod-menu/"
         remote_src: true
+
+- name: Symlink pod menu extension into node_modules
+  ansible.builtin.file:
+    src: "../../../../.k8slens/extensions/alebcay--openlens-node-pod-menu"
+    dest: "{{ openlens_config_dir }}/node_modules/@alebcay/openlens-node-pod-menu"
+    state: link
+  when: openlens_install_pod_menu_extension
+
+- name: Check if multi-pod-logs extension is installed
+  ansible.builtin.stat:
+    path: "{{ openlens_extensions_dir }}/andrea-falco--lens-multi-pod-logs/package.json"
+  register: _multi_pod_logs_check
+  when: openlens_install_multi_pod_logs_extension
+
+- name: Install multi-pod-logs extension
+  when: openlens_install_multi_pod_logs_extension and not _multi_pod_logs_check.stat.exists
+  block:
+    - name: Install @andrea-falco/lens-multi-pod-logs via npm
+      community.general.npm:
+        name: "@andrea-falco/lens-multi-pod-logs"
+        path: /tmp/openlens-ext-install
+        state: present
+
+    - name: Copy multi-pod-logs extension to extensions directory
+      ansible.builtin.copy:
+        src: /tmp/openlens-ext-install/node_modules/@andrea-falco/lens-multi-pod-logs/
+        dest: "{{ openlens_extensions_dir }}/andrea-falco--lens-multi-pod-logs/"
+        remote_src: true
+
+- name: Symlink multi-pod-logs extension into node_modules
+  ansible.builtin.file:
+    src: "../../../../.k8slens/extensions/andrea-falco--lens-multi-pod-logs"
+    dest: "{{ openlens_config_dir }}/node_modules/@andrea-falco/lens-multi-pod-logs"
+    state: link
+  when: openlens_install_multi_pod_logs_extension
+
+- name: Generate .package-lock.json for OpenLens node_modules
+  ansible.builtin.template:
+    src: package-lock.json.j2
+    dest: "{{ openlens_config_dir }}/node_modules/.package-lock.json"
+    mode: "0644"
+
+- name: Register extensions in lens-extensions.json
+  ansible.builtin.template:
+    src: lens-extensions.json.j2
+    dest: "{{ openlens_config_dir }}/lens-extensions.json"
+    mode: "0644"

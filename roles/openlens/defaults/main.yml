@@ -1,3 +1,6 @@
 ---
 openlens_install_pod_menu_extension: true
+openlens_install_multi_pod_logs_extension: true
+# Real extension files live here; node_modules/@scope/name symlinks point here
 openlens_extensions_dir: "{{ ansible_facts['env']['HOME'] }}/.k8slens/extensions"
+openlens_config_dir: "{{ ansible_facts['env']['HOME'] }}/.config/OpenLens"

@@ -1,0 +1,19 @@
+{
+	"__internal__": {
+		"migrations": {
+			"version": "6.4.0"
+		}
+	},
+	"extensions": {
+{% set _entries = [] %}
+{% if openlens_install_pod_menu_extension %}
+{% set _ = _entries.append('"' + openlens_config_dir + '/node_modules/@alebcay/openlens-node-pod-menu/package.json": {"enabled": true, "name": "@alebcay/openlens-node-pod-menu"}') %}
+{% endif %}
+{% if openlens_install_multi_pod_logs_extension %}
+{% set _ = _entries.append('"' + openlens_config_dir + '/node_modules/@andrea-falco/lens-multi-pod-logs/package.json": {"enabled": true, "name": "@andrea-falco/lens-multi-pod-logs"}') %}
+{% endif %}
+{% for entry in _entries %}
+		{{ entry }}{{ ',' if not loop.last else '' }}
+{% endfor %}
+	}
+}
