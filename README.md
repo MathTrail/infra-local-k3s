@@ -38,6 +38,24 @@ just status       # verify cluster health
 | `just status` | Show cluster info |
 | `just clean` | Remove stopped containers and dangling images |
 
+## Pause And Resume
+
+To temporarily stop the local cluster without deleting it:
+
+```bash
+just stop
+```
+
+To bring it back:
+
+```bash
+just start
+just status
+```
+
+`just stop` maps to `k3d cluster stop mathtrail-dev`, so the cluster state is preserved.
+Use `just delete` only when you want to remove the cluster and recreate it from scratch.
+
 ## Container Registry
 
 The cluster includes a local Docker registry:
