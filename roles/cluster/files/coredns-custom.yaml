@@ -7,3 +7,4 @@ data:
   mathtrail.override: |
     rewrite name mathtrail.localhost traefik.kube-system.svc.cluster.local
     rewrite name minio.mathtrail.localhost traefik.kube-system.svc.cluster.local
+    rewrite name argocd.mathtrail.localhost traefik.kube-system.svc.cluster.local
