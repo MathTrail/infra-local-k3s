@@ -1,5 +1,5 @@
 FROM ghcr.io/mathtrail/platform-env:1 AS platform-env
-FROM ghcr.io/actions/actions-runner:2.331.0
+FROM ghcr.io/actions/actions-runner:2.334.0
 
 # ── Platform environment constants ───────────────────────────────────────────
 COPY --from=platform-env /config/global.env /etc/mathtrail/platform.env
