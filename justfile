@@ -30,7 +30,19 @@ start:
         echo "Cluster does not exist. Run 'just create' first"
         exit 1
     fi
-    k3d cluster start {{ CLUSTER_NAME }}
+    # k3d v5.8.x hangs indefinitely after injecting CoreDNS NodeHosts because
+    # the PATCH request to the API server never returns (context leak). Run k3d
+    # in the background, wait for the API server to become reachable, then kill
+    # the stuck process. Ansible re-runs the post-start tasks (kubeconfig merge,
+    # CoreDNS NodeHosts with fresh container IPs, CoreDNS rollout wait).
+    k3d cluster start {{ CLUSTER_NAME }} &
+    K3D_PID=$!
+    echo "Waiting for API server..."
+    KUBECONFIG="$HOME/.kube/k3d-{{ CLUSTER_NAME }}.yaml"
+    until kubectl --kubeconfig "$KUBECONFIG" cluster-info &>/dev/null; do sleep 2; done
+    kill "$K3D_PID" 2>/dev/null || true
+    wait "$K3D_PID" 2>/dev/null || true
+    ansible-playbook -i ansible/inventory/local.yml playbooks/create-cluster.yml
 
 # Stop a running cluster
 stop:
